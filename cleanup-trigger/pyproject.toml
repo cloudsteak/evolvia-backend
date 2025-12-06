@@ -1,12 +1,12 @@
 [project]
-name = "lab-cleanup-trigger"
-version = "0.1.0"
-description = ""
+name = "evolvia-cleanup-trigger"
+version = "0.2.0"
+description = "Clean up trigger for Evolvia. Python 3.13 required."
 authors = [
     {name = "the1bit",email = "tibor.kiss@cloudmentor.hu"}
 ]
-readme = "README.md"
-requires-python = "^3.11"
+readme = "cleanup-trigger/README.md"
+requires-python = "^3.13"
 dependencies = [
     "httpx (>=0.28.1,<0.29.0)"
 ]
