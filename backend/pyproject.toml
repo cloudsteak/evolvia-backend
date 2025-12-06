@@ -2,8 +2,10 @@
 name = "evolvia-backend"
 version = "0.2.0"
 description = "Evolvia Lab management backend service. Python 3.13 required."
-authors = ["CloudSteak"]
-readme = "backend/README.md"
+authors = [
+    {name = "Cloud Mentor",email = "tibor.kiss@cloudmentor.hu"}
+]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.13"

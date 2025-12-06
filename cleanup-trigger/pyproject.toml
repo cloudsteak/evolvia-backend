@@ -3,9 +3,9 @@ name = "evolvia-cleanup-trigger"
 version = "0.2.0"
 description = "Clean up trigger for Evolvia. Python 3.13 required."
 authors = [
-    {name = "the1bit",email = "tibor.kiss@cloudmentor.hu"}
+    {name = "Cloud Mentor",email = "tibor.kiss@cloudmentor.hu"}
 ]
-readme = "cleanup-trigger/README.md"
+readme = "README.md"
 requires-python = "^3.13"
 dependencies = [
     "httpx (>=0.28.1,<0.29.0)"
