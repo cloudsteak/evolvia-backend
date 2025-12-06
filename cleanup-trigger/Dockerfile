@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 
+RUN pip install --upgrade pip
 # Install Poetry
 RUN pip install poetry
 
@@ -8,6 +9,9 @@ WORKDIR /app
 
 # Copy project files
 COPY pyproject.toml poetry.lock ./
+
+RUN poetry --version
+
 RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-root
 
 COPY cleanup_trigger.py .
