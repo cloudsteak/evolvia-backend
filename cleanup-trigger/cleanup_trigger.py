@@ -1,4 +1,6 @@
 # cleanup_trigger.py
+# This script checks for expired labs and triggers their cleanup.
+
 
 import os
 import httpx

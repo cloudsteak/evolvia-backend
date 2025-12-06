@@ -5,12 +5,13 @@ on:
     branches:
       - 'main'
     paths:
-      - 'lab-cleanup-trigger/**'
+      - 'cleanup-trigger/**'
       - '.github/workflows/docker-build-lab-cleanup.yml'
   
 
 jobs:
   build:
+    name: Build and Push Evolvia Lab Cleanup Trigger Docker Image
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -19,6 +20,12 @@ jobs:
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
+
+      - name: Read version from pyproject.toml
+        id: get_version
+        run: |
+          version=$(grep '^version' cleanup-trigger/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -30,17 +37,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract short SHA
-        id: vars
-        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
-          context: ./lab-cleanup-trigger
-          file: ./lab-cleanup-trigger/Dockerfile
+          context: ./cleanup-trigger
+          file: ./cleanup-trigger/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/cloudsteak/lab-cleanup-trigger:latest
-            ghcr.io/cloudsteak/lab-cleanup-trigger:${{ steps.vars.outputs.SHORT_SHA }}
+            ghcr.io/cloudsteak/evolvia/cleanup-trigger:latest
+            ghcr.io/cloudsteak/evolvia/cleanup-trigger:${{ steps.get_version.outputs.version }}
