@@ -179,3 +179,6 @@ iac/terraform.tfvars
 .DS_Store
 **.zip
 **/*.sql
+
+# Kerno files
+.kerno/**
