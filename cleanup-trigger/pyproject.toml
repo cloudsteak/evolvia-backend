@@ -3,15 +3,17 @@ name = "evolvia-cleanup-trigger"
 version = "0.2.0"
 description = "Clean up trigger for Evolvia. Python 3.13 required."
 authors = [
-    {name = "Cloud Mentor",email = "tibor.kiss@cloudmentor.hu"}
+    {name = "Cloud Mentor", email = "tibor.kiss@cloudmentor.hu"}
 ]
 readme = "README.md"
-requires-python = "^3.13"
+requires-python = ">=3.13"
 dependencies = [
-    "httpx (>=0.28.1,<0.29.0)"
+    "httpx>=0.28.1,<0.29.0"
 ]
 
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cleanup_trigger.py"]
