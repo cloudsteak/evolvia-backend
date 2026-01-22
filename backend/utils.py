@@ -1,4 +1,4 @@
-# --- lab-backend/utils.py ---
+# --- backend/utils.py ---
 
 import random
 import string
