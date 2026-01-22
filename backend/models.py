@@ -1,6 +1,5 @@
-# --- lab-backend/models.py ---
-
 from pydantic import BaseModel, EmailStr
+
 
 class LabRequest(BaseModel):
     lab_name: str
@@ -8,22 +7,24 @@ class LabRequest(BaseModel):
     email: EmailStr
     lab_ttl: int
 
+
 class LabReadyRequest(BaseModel):
     username: str
-    status: str # expected values: "ready", "error", "failed", etc.
+    status: str
 
 
 class LabDeleteRequest(BaseModel):
     username: str
 
 
-status_map = {
-    "ready": "success",
-    "failed": "error"
-}
-
-class VerifyRequest(BaseModel):
+class VerifyLabRequest(BaseModel):
     user: str
     email: EmailStr
-    cloud: str  # pl. "azure"
-    lab: str    # pl. "basic"
+    cloud: str
+    lab: str
+
+
+status_map = {
+    "ready": "success",
+    "failed": "error",
+}
