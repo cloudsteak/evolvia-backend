@@ -1,18 +1,16 @@
 FROM python:3.13-slim
 
-RUN pip install --upgrade pip
-# Install Poetry
-RUN pip install poetry
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Set workdir
 WORKDIR /app
 
 # Copy project files
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml uv.lock ./
 
-RUN poetry --version
-
-RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-root
+# Install dependencies system-wide (no venv)
+RUN uv pip install --system --no-cache -r pyproject.toml
 
 COPY cleanup_trigger.py .
 
