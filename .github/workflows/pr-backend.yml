@@ -1,0 +1,55 @@
+name: PR Backend Check
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/pr-backend.yml"
+
+jobs:
+  lint:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-path: "backend/uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Run Ruff
+        run: uv run --with ruff ruff check backend
+
+  version-check:
+    name: Verify Version Bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version change
+        run: |
+          echo "Comparing versions in backend/pyproject.toml"
+          
+          # Get current version from PR branch
+          CURRENT_VERSION=$(grep "^version =" backend/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Get version from main branch
+          # Using git show to avoid switching branches
+          MAIN_PYPROJECT=$(git show origin/main:backend/pyproject.toml)
+          MAIN_VERSION=$(echo "$MAIN_PYPROJECT" | grep "^version =" | sed 's/version = "\(.*\)"/\1/')
+          echo "Main version: $MAIN_VERSION"
+          
+          if [ "$CURRENT_VERSION" = "$MAIN_VERSION" ]; then
+            echo "❌ ERROR: Version has not been bumped in backend/pyproject.toml ($CURRENT_VERSION)"
+            exit 1
+          else
+            echo "✅ SUCCESS: Version bumped from $MAIN_VERSION to $CURRENT_VERSION"
+          fi
