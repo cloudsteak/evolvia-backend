@@ -53,8 +53,23 @@ def is_expired(lab):
     return now >= expiry_time
 
 def cleanup_expired_labs():
-    response = httpx.get(LAB_STATUS_ENDPOINT, headers=HEADERS, timeout=TIMEOUT)
-    response.raise_for_status()
+    if not BACKEND_URL:
+        logging.error("BACKEND_URL environment variable is not set")
+        return
+
+    try:
+        response = httpx.get(LAB_STATUS_ENDPOINT, headers=HEADERS, timeout=TIMEOUT)
+        response.raise_for_status()
+    except httpx.ConnectError as e:
+        logging.error(f"❌ Connection Error: Could not resolve or connect to backend at {BACKEND_URL}. Check K8s service name and DNS. Error: {e}")
+        return
+    except httpx.HTTPStatusError as e:
+        logging.error(f"❌ HTTP Error: Backend returned {e.response.status_code} for {LAB_STATUS_ENDPOINT}")
+        return
+    except Exception as e:
+        logging.error(f"❌ Unexpected Error: {e}")
+        return
+
     labs_data = response.json()
     labs = labs_data.get("labs", [])
 

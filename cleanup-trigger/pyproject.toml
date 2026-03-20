@@ -1,6 +1,6 @@
 [project]
 name = "evolvia-cleanup-trigger"
-version = "0.2.1"
+version = "0.2.2"
 description = "Clean up trigger for Evolvia. Python 3.13 required."
 authors = [
     {name = "Cloud Mentor", email = "tibor.kiss@cloudmentor.hu"}
