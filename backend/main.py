@@ -134,6 +134,7 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
         "password": password,
         "email": request.email,
         "status": "pending",
+        "created_at": datetime.utcnow().isoformat(),
     }
 
     # Store lab metadata (no TTL!)
