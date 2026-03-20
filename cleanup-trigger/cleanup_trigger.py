@@ -21,8 +21,11 @@ HEADERS = {"X-Internal-Secret": INTERNAL_SECRET}
 def is_expired(lab):
     status = lab.get("status", "ready")
     
-    # Use started_at for ready labs, error_at for failed labs
+    # Priority: started_at (ready) > error_at (failed) > created_at (pending/fallback)
     timestamp_str = lab.get("started_at") if status == "ready" else lab.get("error_at")
+    if not timestamp_str:
+        timestamp_str = lab.get("created_at")
+
     ttl_seconds = lab.get("lab_ttl", 5400)  # Default TTL is 5400 seconds (1.5 hours)
     
     if not timestamp_str:
@@ -41,9 +44,11 @@ def is_expired(lab):
         expiry_time = timestamp + timedelta(seconds=ttl_seconds)
     elif status == "failed":
         expiry_time = timestamp + timedelta(seconds=14400) # 4 hours for failed labs
+    elif status == "pending":
+        expiry_time = timestamp + timedelta(seconds=7200) # 2 hours for stuck pending labs
     else:
-        # For other statuses (e.g. pending), we don't have a specific expiry yet
-        return False
+        # For other unknown statuses, use a safe default of 4 hours
+        expiry_time = timestamp + timedelta(seconds=14400)
 
     return now >= expiry_time
 
