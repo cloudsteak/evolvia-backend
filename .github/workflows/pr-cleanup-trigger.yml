@@ -1,0 +1,54 @@
+name: PR Cleanup Trigger Check
+
+on:
+  pull_request:
+    paths:
+      - "cleanup-trigger/**"
+      - ".github/workflows/pr-cleanup-trigger.yml"
+
+jobs:
+  lint:
+    name: Lint Cleanup Trigger
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-path: "cleanup-trigger/uv.lock"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Run Ruff
+        run: uv run --with ruff ruff check cleanup-trigger
+
+  version-check:
+    name: Verify Version Bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version change
+        run: |
+          echo "Comparing versions in cleanup-trigger/pyproject.toml"
+          
+          # Get current version from PR branch
+          CURRENT_VERSION=$(grep "^version =" cleanup-trigger/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Get version from main branch
+          MAIN_PYPROJECT=$(git show origin/main:cleanup-trigger/pyproject.toml)
+          MAIN_VERSION=$(echo "$MAIN_PYPROJECT" | grep "^version =" | sed 's/version = "\(.*\)"/\1/')
+          echo "Main version: $MAIN_VERSION"
+          
+          if [ "$CURRENT_VERSION" = "$MAIN_VERSION" ]; then
+            echo "❌ ERROR: Version has not been bumped in cleanup-trigger/pyproject.toml ($CURRENT_VERSION)"
+            exit 1
+          else
+            echo "✅ SUCCESS: Version bumped from $MAIN_VERSION to $CURRENT_VERSION"
+          fi
