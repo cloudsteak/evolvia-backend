@@ -19,27 +19,31 @@ TIMEOUT = 30  # seconds
 HEADERS = {"X-Internal-Secret": INTERNAL_SECRET}
 
 def is_expired(lab):
-    started_at_str = lab.get("started_at")
-    ttl_seconds = lab.get("lab_ttl", 5400)  # Default TTL is 5400 seconds (1.5 hours)
-    logging.info(f'TTL seconds: {ttl_seconds}')
     status = lab.get("status", "ready")
-
-    if not started_at_str:
+    
+    # Use started_at for ready labs, error_at for failed labs
+    timestamp_str = lab.get("started_at") if status == "ready" else lab.get("error_at")
+    ttl_seconds = lab.get("lab_ttl", 5400)  # Default TTL is 5400 seconds (1.5 hours)
+    
+    if not timestamp_str:
+        logging.debug(f"No timestamp found for lab {lab.get('username')} with status {status}")
         return False
 
     try:
-        started_at = datetime.fromisoformat(started_at_str).replace(tzinfo=timezone.utc)
-        logging.info(f'Started at: {started_at}')
+        timestamp = datetime.fromisoformat(timestamp_str).replace(tzinfo=timezone.utc)
     except Exception as e:
-        logging.error(f"Invalid started_at for {lab.get('username')}: {started_at_str} - {e}")
+        logging.error(f"Invalid timestamp for {lab.get('username')}: {timestamp_str} - {e}")
         return False
 
     now = datetime.now(timezone.utc)
 
     if status == "ready":
-        expiry_time = started_at + timedelta(seconds=ttl_seconds)
+        expiry_time = timestamp + timedelta(seconds=ttl_seconds)
     elif status == "failed":
-        expiry_time = started_at + timedelta(seconds=14400)
+        expiry_time = timestamp + timedelta(seconds=14400) # 4 hours for failed labs
+    else:
+        # For other statuses (e.g. pending), we don't have a specific expiry yet
+        return False
 
     return now >= expiry_time
 
