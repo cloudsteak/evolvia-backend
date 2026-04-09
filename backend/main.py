@@ -331,6 +331,8 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
             lab=request.lab,
         )
         return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=str(e))
     except Exception as e:

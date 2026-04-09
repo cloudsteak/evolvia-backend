@@ -240,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "evolvia-backend-core"
-version = "0.3.0"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
