@@ -23,7 +23,7 @@ jobs:
       - name: Read version from pyproject.toml
         id: get_version
         run: |
-          version=$(grep '^version' cleanup-trigger/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          version=$(grep '^version' backend/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
