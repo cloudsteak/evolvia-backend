@@ -331,9 +331,27 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
             lab=request.lab,
         )
         return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except ValueError as error:
+        logging.warning("Invalid verify-lab request: %s", error)
+        raise HTTPException(status_code=400, detail="Invalid verify-lab request.")
+    except httpx.HTTPStatusError as error:
+        upstream_status = error.response.status_code
+        logging.warning(
+            "Verify service returned status %s for cloud '%s', lab '%s'.",
+            upstream_status,
+            request.cloud,
+            request.lab,
+        )
+        if 400 <= upstream_status < 500:
+            raise HTTPException(status_code=upstream_status, detail="Verify request failed.")
+        raise HTTPException(
+            status_code=502, detail="Verify service is temporarily unavailable."
+        )
+    except httpx.HTTPError as error:
+        logging.error("Verify service communication error: %s", error)
+        raise HTTPException(
+            status_code=502, detail="Verify service is temporarily unavailable."
+        )
+    except Exception:
+        logging.exception("Unexpected error while processing verify-lab request.")
+        raise HTTPException(status_code=500, detail="Unexpected server error.")
