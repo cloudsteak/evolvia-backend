@@ -33,3 +33,23 @@ uv sync
 ```bash
 uvicorn main:app --reload
 ```
+
+## Verify Service Configuration
+
+The backend routes `/verify-lab` calls to provider-specific verify microservices based on the `cloud` value (`azure`, `aws`, `gcp`).
+
+Required environment variables:
+
+```bash
+VERIFY_LAB_AZURE_HOST
+VERIFY_LAB_AZURE_PATH
+INTERNAL_VERIFY_AZURE_API_KEY
+
+VERIFY_LAB_AWS_HOST
+VERIFY_LAB_AWS_PATH
+INTERNAL_VERIFY_AWS_API_KEY
+
+VERIFY_LAB_GCP_HOST
+VERIFY_LAB_GCP_PATH
+INTERNAL_VERIFY_GCP_API_KEY
+```

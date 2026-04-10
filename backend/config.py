@@ -36,9 +36,15 @@ class Settings:
     internal_messenger_api_key: str
 
     # Verify service
-    verify_lab_host: str
-    verify_lab_path: str
-    internal_verify_api_key: str
+    verify_lab_azure_host: str
+    verify_lab_azure_path: str
+    internal_verify_azure_api_key: str
+    verify_lab_aws_host: str
+    verify_lab_aws_path: str
+    internal_verify_aws_api_key: str
+    verify_lab_gcp_host: str
+    verify_lab_gcp_path: str
+    internal_verify_gcp_api_key: str
 
 
 def get_settings() -> Settings:
@@ -67,7 +73,13 @@ def get_settings() -> Settings:
         messenger_template=os.getenv("MESSENGER_TEMPLATE", "lab_ready_default"),
         internal_messenger_api_key=os.environ["INTERNAL_MESSENGER_API_KEY"],
 
-        verify_lab_host=os.environ["VERIFY_LAB_HOST"],
-        verify_lab_path=os.environ["VERIFY_LAB_PATH"],
-        internal_verify_api_key=os.environ["INTERNAL_VERIFY_API_KEY"],
+        verify_lab_azure_host=os.environ["VERIFY_LAB_AZURE_HOST"],
+        verify_lab_azure_path=os.environ["VERIFY_LAB_AZURE_PATH"],
+        internal_verify_azure_api_key=os.environ["INTERNAL_VERIFY_AZURE_API_KEY"],
+        verify_lab_aws_host=os.environ["VERIFY_LAB_AWS_HOST"],
+        verify_lab_aws_path=os.environ["VERIFY_LAB_AWS_PATH"],
+        internal_verify_aws_api_key=os.environ["INTERNAL_VERIFY_AWS_API_KEY"],
+        verify_lab_gcp_host=os.environ["VERIFY_LAB_GCP_HOST"],
+        verify_lab_gcp_path=os.environ["VERIFY_LAB_GCP_PATH"],
+        internal_verify_gcp_api_key=os.environ["INTERNAL_VERIFY_GCP_API_KEY"],
     )
