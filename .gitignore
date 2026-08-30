@@ -176,6 +176,11 @@ iac/.terraform/terraform.tfstate
 iac/.terraform/**
 iac/.terraform.lock.hcl
 iac/terraform.tfvars
+infra/aws/**/.terraform/
+infra/aws/**/.terraform.lock.hcl
+infra/aws/**/terraform.tfvars
+infra/aws/**/*.tfstate
+infra/aws/**/*.tfstate.*
 .DS_Store
 **.zip
 **/*.sql
