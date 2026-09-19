@@ -2,6 +2,8 @@
 
 FastAPI alapú backend automatikus Azure lab környezetek létrehozásához, email értesítéssel, Auth0 hitelesítéssel, Redis-alapú TTL kezelés.
 
+Lambda / AWS átállás (lépésenként): [docs/atallas.md](docs/atallas.md). Infra: [infra/](infra/README.md).
+
 ## Futás Dockerrel:
 
 ```bash
