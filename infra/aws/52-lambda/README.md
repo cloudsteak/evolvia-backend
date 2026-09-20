@@ -41,7 +41,7 @@ A `create` SnapStart snapshot miatt eltarthat.
 ## Név
 
 - `local.functions` — `name`, `image_tag`, `timeout`, `ses`, `dynamodb`, `ssm`
-- Parameter Store: `/{env}/{prefix}/api-keys/{wordpress,github,internal}` (SecureString); `/{env}/{prefix}/github/{token,repo}`; `/{env}/{prefix}/portal/{azure,aws}` (String, kivéve token). Workflow suffix: `local.github_workflow_filename`. Tofu `replace-me` + `ignore_changes`. Érték: `put-parameter --overwrite`.
+- Parameter Store: `/{env}/{prefix}/api-keys/{wordpress,github,internal}` (SecureString); `/{env}/{prefix}/github/{token,repo}`; `/{env}/{prefix}/portal/{azure,aws}`; `/{env}/{prefix}/verify/{azure,aws,gcp}/{url,key}`; `/{env}/{prefix}/wordpress/{webhook-url,webhook-token}`. Workflow suffix: `local.github_workflow_filename`. Tofu `replace-me` + `ignore_changes`. Érték: `put-parameter --overwrite`.
 - role: `{prefix}-lambda-{key}`
 - policies: `{role}-{capability}`; GitHub: `{github-role}-lambda`
 

@@ -42,6 +42,13 @@ resource "aws_lambda_function" "this" {
         GITHUB_WORKFLOW_FILENAME = local.github_workflow_filename
         GITHUB_TOKEN_PATH        = local.github_token_path
       } : {},
+      each.value.verify ? {
+        VERIFY_PATH = local.verify_path
+      } : {},
+      each.value.wordpress ? {
+        WORDPRESS_WEBHOOK_URL_PATH   = local.wordpress_webhook_url_path
+        WORDPRESS_WEBHOOK_TOKEN_PATH = local.wordpress_webhook_token_path
+      } : {},
       each.value.invoke_backend ? {
         BACKEND_FUNCTION_NAME = local.functions.backend.name
         BACKEND_ALIAS         = local.alias_name

@@ -153,6 +153,52 @@ resource "aws_iam_role_policy" "github_token" {
   })
 }
 
+resource "aws_iam_role_policy" "verify" {
+  for_each = { for k, v in local.functions : k => v if v.verify }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-verify"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.verify_path}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "wordpress" {
+  for_each = { for k, v in local.functions : k => v if v.wordpress }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-wordpress"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.wordpress_path}/*",
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "invoke_backend" {
   for_each = { for k, v in local.functions : k => v if v.invoke_backend }
 

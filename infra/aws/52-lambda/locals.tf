@@ -8,10 +8,15 @@ locals {
   github_path               = "/${local.env}/${local.prefix}/github"
   github_token_path         = "${local.github_path}/token"
   github_repo_path          = "${local.github_path}/repo"
-  github_workflow_filename  = "-lab.yml"
+  github_workflow_filename  = "-lab-manager.yaml"
   portal_path               = "/${local.env}/${local.prefix}/portal"
   portal_azure_url_path     = "${local.portal_path}/azure"
   portal_aws_url_path       = "${local.portal_path}/aws"
+  verify_path               = "/${local.env}/${local.prefix}/verify"
+  verify_clouds             = toset(["azure", "aws", "gcp"])
+  wordpress_path            = "/${local.env}/${local.prefix}/wordpress"
+  wordpress_webhook_url_path   = "${local.wordpress_path}/webhook-url"
+  wordpress_webhook_token_path = "${local.wordpress_path}/webhook-token"
 
   config_parameters = {
     github_repo  = local.github_repo_path
@@ -29,6 +34,8 @@ locals {
       dynamodb  = true
       ssm            = false
       github         = true
+      verify         = true
+      wordpress      = true
       invoke_backend = false
     }
     cleanup = {
@@ -40,6 +47,8 @@ locals {
       dynamodb       = false
       ssm            = false
       github         = false
+      verify         = false
+      wordpress      = false
       invoke_backend = true
     }
     authorizer = {
@@ -51,6 +60,8 @@ locals {
       dynamodb  = false
       ssm       = true
       github    = false
+      verify    = false
+      wordpress = false
       invoke_backend = false
     }
   }
