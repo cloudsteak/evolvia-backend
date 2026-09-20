@@ -27,7 +27,7 @@ permissions:
 jobs:
   lint:
     name: Lint ${{ inputs.path }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -53,7 +53,7 @@ jobs:
   version:
     name: Version bump ${{ inputs.path }}
     if: inputs.version-file != ''
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,7 +83,7 @@ jobs:
 
   image:
     name: Docker build ${{ inputs.path }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 

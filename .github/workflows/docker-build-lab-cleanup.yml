@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     name: Build and Push Evolvia Lab Cleanup Trigger Docker Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
       contents: read
