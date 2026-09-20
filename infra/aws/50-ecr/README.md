@@ -1,6 +1,6 @@
 # 50-ecr
 
-Apply kész (backend). Cleanup repo: **újra apply**. `local.repositories` map: `backend`, `cleanup`.
+Apply kész. `local.repositories`: `backend`, `cleanup`, `authorizer`. Új repo: **újra apply**, aztán image push, aztán 52.
 
 Lifecycle mindkettőn: `latest` + 5× `*.*` + untagged 180 nap. GitHub policy mindkét repo ARN-jére.
 
@@ -23,7 +23,7 @@ tofu apply
 
 ## Név
 
-`local.repositories` — `{prefix}-{key}` → `evolvia-backend`, `evolvia-cleanup`.
+`local.repositories` — `{prefix}-{key}` → `evolvia-backend`, `evolvia-cleanup`, `evolvia-authorizer`.
 
 ## Outputs
 
@@ -32,7 +32,7 @@ tofu apply
 
 ## Első push
 
-[02-infra-tofu — első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push) — backend és cleanup külön.
+[02-infra-tofu — első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push) — backend, cleanup, authorizer külön. Authorizer catch-up: [ugyanott](../../../docs/steps/02-infra-tofu.md#authorizer-catch-up-3c-előre).
 
 ## Következő
 

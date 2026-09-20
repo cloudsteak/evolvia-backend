@@ -8,6 +8,9 @@ locals {
     cleanup = {
       name = "${local.prefix}-cleanup"
     }
+    authorizer = {
+      name = "${local.prefix}-authorizer"
+    }
   }
 
   ecr_keep_count          = 5
