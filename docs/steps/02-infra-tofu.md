@@ -52,11 +52,78 @@ docker buildx build --platform linux/amd64 \
   cleanup-trigger
 ```
 
-A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`). Main után: CI (`ecr-backend.yml`; cleanup workflow később).
+A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`, `authorizer`). Main után: CI (`ecr-backend.yml`; cleanup/authorizer workflow később).
+
+## Authorizer catch-up (3c előre)
+
+50 apply **előbb** (repo). Image push a **repo gyökérből**. 52 apply **után**.
+
+`"${URI}:latest"` — kapcsos zárójel. `--provenance=false --sbom=false` — a Lambda nem fogad Image Indexet.
+
+```bash
+cd infra/aws/50-ecr
+tofu apply
+```
+
+```bash
+export AWS_PROFILE=prod
+export AWS_REGION=eu-north-1
+
+URI=$(aws ecr describe-repositories --repository-names evolvia-authorizer --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
+aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
+docker buildx build --platform linux/amd64 \
+  --provenance=false --sbom=false \
+  -f authorizer/Dockerfile.lambda \
+  -t "${URI}:1.0.0" \
+  -t "${URI}:latest" \
+  --push \
+  authorizer
+```
+
+```bash
+cd infra/aws/52-lambda
+tofu apply
+```
+
+Ha a paraméter már létezik (`ParameterAlreadyExists`): **import**, ne overwrite (az `replace-me`-t ráírná).
+
+```bash
+cd infra/aws/52-lambda
+tofu import 'aws_ssm_parameter.api_keys["wordpress"]' /prod/evolvia/api-keys/wordpress
+tofu import 'aws_ssm_parameter.api_keys["github"]' /prod/evolvia/api-keys/github
+tofu import 'aws_ssm_parameter.api_keys["internal"]' /prod/evolvia/api-keys/internal
+tofu apply
+```
+
+A három SecureStringt te írod felül (`replace-me` nem kulcs). Új kulcs (első feltöltés és **rotation** ugyanaz):
+
+```bash
+openssl rand -hex 32
+```
+
+256 bit, header-barát. A `github` kulcs új (eddig Auth0); nem a `ghp_` PAT.
+
+```bash
+export AWS_PROFILE=prod
+export AWS_REGION=eu-north-1
+
+aws ssm put-parameter --name /prod/evolvia/api-keys/wordpress --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/api-keys/github --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/api-keys/internal --type SecureString --overwrite --value '…'
+```
+
+Rotation: új `openssl rand -hex 32`, ugyanaz a `put-parameter --overwrite`. Az authorizer cache 60 mp; utána a kliens (plugin / GitHub secret) is az új értéket küldje.
+
+```bash
+cd infra/aws/60-backend
+tofu apply
+```
+
+`GET /health` nyitva. A többi route: header `X-API-Key`.
 
 ## 52 apply
 
-Már lefutott.
+Már lefutott. Authorizer: fenti catch-up.
 
 ## 55 apply
 
@@ -64,4 +131,4 @@ Már lefutott.
 
 ## 60 apply
 
-Stage `live`, 7 route. Alias: 22 catch-up után `https://backend.api.evolvia.hu/`.
+Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-up.

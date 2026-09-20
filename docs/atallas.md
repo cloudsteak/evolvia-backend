@@ -5,7 +5,7 @@ K8s + Redis + Auth0 + cm-messenger (Brevo) → Lambda + API Gateway + DynamoDB +
 - Account: izolált platform / SES-prod (nem a lab/foundation account)
 - Prod host: `backend.api.evolvia.hu` (`evolvia.hu` hosted zone, ebben az accountban)
 - Infra: `infra/`, alkalmazáskód: `backend/`, `cleanup-trigger/`
-- Layer terv: [docs/layers.md](./layers.md). Kisebbtől nagyobbig. 20–22, 34, 50, 52, 55, 60 kész. 22 alias catch-up: custom domain a 22-é, bind a 60-é.
+- Layer terv: [docs/layers.md](./layers.md). Kisebbtől nagyobbig. 20–22, 34, 50, 52, 55, 60 kész. 3c authorizer előrehozva (52 + 60). Minden Lambda a 52-ben.
 - Layer adat: későbbi stack az előzőt `terraform_remote_state`-ből olvassa. Nincs másolt account ID / ARN változó.
 
 Sorrend: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**. A 8. (WordPress) a 7. (DNS) után, a 9. (K8s törlés) előtt.
