@@ -5,9 +5,10 @@ from datetime import datetime, timedelta, timezone
 
 import boto3
 
+logger = logging.getLogger(__name__)
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
 logging.basicConfig(level=_level)
-logging.getLogger().setLevel(_level)
+logger.setLevel(_level)
 
 TIMEOUT = 30
 
@@ -23,15 +24,15 @@ def is_expired(lab):
     ttl_seconds = lab.get("lab_ttl", 5400)
 
     if not timestamp_str:
-        logging.debug("No timestamp found for lab %s with status %s", lab.get("username"), status)
+        logger.debug("No timestamp found for lab %s with status %s", lab.get("username"), status)
         return False
 
     try:
         timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)
-    except Exception as e:
-        logging.error("Invalid timestamp for %s: %s - %s", lab.get("username"), timestamp_str, e)
+    except (TypeError, ValueError) as e:
+        logger.error("Invalid timestamp for %s: %s - %s", lab.get("username"), timestamp_str, e)
         return False
 
     now = datetime.now(timezone.utc)
@@ -64,47 +65,47 @@ def cleanup_expired_labs():
     listing = _invoke("GET /lab-status/all")
     status = listing.get("statusCode", 500)
     if status >= 400:
-        logging.error("HTTP Error: Backend returned %s for /lab-status/all", status)
+        logger.error("HTTP Error: Backend returned %s for /lab-status/all", status)
         return
 
     try:
         labs_data = json.loads(listing.get("body") or "{}")
     except json.JSONDecodeError as e:
-        logging.error("Unexpected Error: %s", e)
+        logger.error("Unexpected Error: %s", e)
         return
 
     labs = labs_data.get("labs", [])
     if not isinstance(labs, list):
-        logging.error("Invalid response format: %s", labs_data)
+        logger.error("Invalid response format: %s", labs_data)
         return
 
     for lab in labs:
         username = lab.get("username")
-        logging.info("User: %s - Lab started:%s", username, lab.get("started_at"))
+        logger.info("User: %s - Lab started:%s", username, lab.get("started_at"))
         if is_expired(lab):
-            logging.info("[EXPIRED] Cleaning up lab %s (status: %s)", username, lab.get("status"))
+            logger.info("[EXPIRED] Cleaning up lab %s (status: %s)", username, lab.get("status"))
             res = _invoke("POST /clean-up-lab", {"username": username})
             if res.get("statusCode") == 200:
-                logging.info("Lab %s cleaned up", username)
+                logger.info("Lab %s cleaned up", username)
                 del_res = _invoke("POST /lab-delete-internal", {"username": username})
                 if del_res.get("statusCode") == 200:
-                    logging.info("Deleted lab record for %s", username)
+                    logger.info("Deleted lab record for %s", username)
                 else:
-                    logging.warning(
+                    logger.warning(
                         "Failed to delete lab %s: %s %s",
                         username,
                         del_res.get("statusCode"),
                         del_res.get("body"),
                     )
             else:
-                logging.warning(
+                logger.warning(
                     "Failed to clean up lab %s: %s %s",
                     username,
                     res.get("statusCode"),
                     res.get("body"),
                 )
         else:
-            logging.debug("[ACTIVE] Skipping lab %s, still within TTL", username)
+            logger.debug("[ACTIVE] Skipping lab %s, still within TTL", username)
 
 
 def handler(event, context):
