@@ -25,8 +25,8 @@ resource "aws_iam_role_policy" "invoke" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect   = "Allow"
-        Action   = ["lambda:InvokeFunction"]
+        Effect = "Allow"
+        Action = ["lambda:InvokeFunction"]
         Resource = [
           local.lambda[each.value.function].qualified_arn,
           local.lambda[each.value.function].arn,
