@@ -103,6 +103,12 @@ def cleanup_expired_labs():
         if delete_lab(username):
             logging.info("Deleted DynamoDB item %s", username)
             cleaned.append(username)
+        else:
+            logging.error("DynamoDB delete failed for %s after GitHub destroy", username)
+    if cleaned:
+        logging.info("Cleanup finished: deleted %s", cleaned)
+    else:
+        logging.info("Cleanup finished: nothing deleted")
     return cleaned
 
 
