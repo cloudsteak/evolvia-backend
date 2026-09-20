@@ -62,7 +62,12 @@ def _start_lab(payload):
     }
     logging.info("Storing lab data for %s in DynamoDB", username)
     put_lab(item)
-    if not dispatch(item, "apply", password=password):
+    try:
+        ok = dispatch(item, "apply", password=password)
+    except Exception:
+        logging.exception("GitHub apply failed for %s", username)
+        return _json(500, {"message": "Failed to trigger workflow"})
+    if not ok:
         return _json(500, {"message": "Failed to trigger workflow"})
     return _json(
         200,

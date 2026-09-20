@@ -6,10 +6,8 @@ from types import SimpleNamespace
 import boto3
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-_PLACEHOLDER = "replace-me"
 _ALLOWED_TEMPLATES = {"lab_ready_default"}
 _SUBJECT = "[Evolvia] - A labor környezeted elkészült!"
-_params = {}
 
 
 class TemplateNotFoundError(Exception):
@@ -17,12 +15,7 @@ class TemplateNotFoundError(Exception):
 
 
 def _ssm(name):
-    if name not in _params:
-        value = boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
-        if not value or value == _PLACEHOLDER:
-            raise RuntimeError(f"SSM {name} is missing or still replace-me")
-        _params[name] = value
-    return _params[name]
+    return boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
 
 
 def _settings():

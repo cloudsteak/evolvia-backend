@@ -7,18 +7,11 @@ import urllib.request
 
 import boto3
 
-_PLACEHOLDER = "replace-me"
 _STATUS = {"ready": "success", "failed": "error"}
-_params = {}
 
 
 def _ssm(name):
-    if name not in _params:
-        value = boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
-        if not value or value == _PLACEHOLDER:
-            raise RuntimeError(f"SSM {name} is missing or still replace-me")
-        _params[name] = value
-    return _params[name]
+    return boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
 
 
 def notify(lab, status_value):
