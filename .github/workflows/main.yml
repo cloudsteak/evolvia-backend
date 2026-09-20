@@ -36,6 +36,9 @@ jobs:
   images:
     needs: changes
     if: needs.changes.outputs.has_images == 'true'
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: true
       matrix:
@@ -57,6 +60,9 @@ jobs:
       needs.changes.result == 'success' &&
       needs.changes.outputs.infra == 'true' &&
       (needs.images.result == 'success' || needs.images.result == 'skipped')
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: true
       max-parallel: 1

@@ -66,6 +66,9 @@ jobs:
   tofu:
     needs: changes
     if: needs.changes.outputs.infra == 'true'
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       fail-fast: true
       max-parallel: 1
