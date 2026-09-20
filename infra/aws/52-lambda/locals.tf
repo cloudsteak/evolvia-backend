@@ -50,7 +50,7 @@ locals {
     }
     authorizer = {
       name      = "${local.prefix}-authorizer"
-      image_tag = "1.0.2"
+      image_tag = "1.0.3"
       timeout   = 10
       log_level = "DEBUG"
       ses       = false

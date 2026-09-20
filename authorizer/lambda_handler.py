@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 import boto3
 
@@ -7,13 +8,15 @@ _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.IN
 logging.basicConfig(level=_level)
 logging.getLogger().setLevel(_level)
 
-_PLACEHOLDER = "replace-me"
+_KEYS_TTL_SECONDS = 60
 _keys = None
+_keys_loaded_at = 0.0
 
 
 def _load_keys():
-    global _keys
-    if _keys is not None:
+    global _keys, _keys_loaded_at
+    now = time.monotonic()
+    if _keys is not None and now - _keys_loaded_at < _KEYS_TTL_SECONDS:
         return _keys
 
     name = os.environ["SSM_API_KEYS"]
@@ -22,11 +25,8 @@ def _load_keys():
         Recursive=True,
         WithDecryption=True,
     )
-    _keys = {
-        item["Value"]
-        for item in resp.get("Parameters", [])
-        if item.get("Value") and item["Value"] != _PLACEHOLDER
-    }
+    _keys = {item["Value"] for item in resp.get("Parameters", []) if item.get("Value")}
+    _keys_loaded_at = now
     return _keys
 
 
