@@ -30,24 +30,29 @@ resource "aws_lambda_function" "this" {
         LABS_TABLE_NAME = data.terraform_remote_state.dynamodb.outputs.labs_table_name
       } : {},
       each.value.ses ? {
-        SES_FROM_ADDRESS       = data.terraform_remote_state.ses.outputs.from_address
-        PORTAL_AZURE_URL_PATH  = local.portal_azure_url_path
-        PORTAL_AWS_URL_PATH    = local.portal_aws_url_path
+        SES_FROM_ADDRESS      = data.terraform_remote_state.ses.outputs.from_address
+        SSM_PORTAL_AZURE_URL  = local.ssm_portal_azure_url
+        SSM_PORTAL_AWS_URL    = local.ssm_portal_aws_url
       } : {},
       each.value.ssm ? {
-        API_KEYS_PATH = local.api_keys_path
+        SSM_API_KEYS = local.ssm_api_keys
       } : {},
       each.value.github ? {
-        GITHUB_REPO_PATH         = local.github_repo_path
+        SSM_GITHUB_REPO          = local.ssm_github_repo
         GITHUB_WORKFLOW_FILENAME = local.github_workflow_filename
-        GITHUB_TOKEN_PATH        = local.github_token_path
+        SSM_GITHUB_TOKEN         = local.ssm_github_token
       } : {},
       each.value.verify ? {
-        VERIFY_PATH = local.verify_path
+        SSM_VERIFY_AZURE_URL = local.ssm_verify_azure_url
+        SSM_VERIFY_AZURE_KEY = local.ssm_verify_azure_key
+        SSM_VERIFY_AWS_URL   = local.ssm_verify_aws_url
+        SSM_VERIFY_AWS_KEY   = local.ssm_verify_aws_key
+        SSM_VERIFY_GCP_URL   = local.ssm_verify_gcp_url
+        SSM_VERIFY_GCP_KEY   = local.ssm_verify_gcp_key
       } : {},
       each.value.wordpress ? {
-        WORDPRESS_WEBHOOK_URL_PATH   = local.wordpress_webhook_url_path
-        WORDPRESS_WEBHOOK_TOKEN_PATH = local.wordpress_webhook_token_path
+        SSM_WORDPRESS_WEBHOOK_URL   = local.ssm_wordpress_webhook_url
+        SSM_WORDPRESS_WEBHOOK_TOKEN = local.ssm_wordpress_webhook_token
       } : {},
       each.value.invoke_backend ? {
         BACKEND_FUNCTION_NAME = local.functions.backend.name

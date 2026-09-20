@@ -98,7 +98,7 @@ resource "aws_iam_role_policy" "portal" {
           "ssm:GetParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.portal_path}/*",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_portal}/*",
         ]
       }
     ]
@@ -122,8 +122,8 @@ resource "aws_iam_role_policy" "ssm" {
           "ssm:GetParametersByPath",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.api_keys_path}",
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.api_keys_path}/*",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_api_keys}",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_api_keys}/*",
         ]
       }
     ]
@@ -146,7 +146,7 @@ resource "aws_iam_role_policy" "github_token" {
           "ssm:GetParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.github_path}/*",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_github}/*",
         ]
       }
     ]
@@ -169,7 +169,7 @@ resource "aws_iam_role_policy" "verify" {
           "ssm:GetParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.verify_path}/*",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${local.env}/${local.prefix}/verify/*",
         ]
       }
     ]
@@ -192,7 +192,7 @@ resource "aws_iam_role_policy" "wordpress" {
           "ssm:GetParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.wordpress_path}/*",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_wordpress}/*",
         ]
       }
     ]
