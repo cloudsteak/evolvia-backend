@@ -1,0 +1,89 @@
+name: ECR image
+
+on:
+  workflow_call:
+    inputs:
+      context:
+        required: true
+        type: string
+      file:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      version_file:
+        required: false
+        type: string
+        default: ""
+      function_key:
+        required: true
+        type: string
+    secrets:
+      AWS_GITHUB_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+
+jobs:
+  push:
+    name: Push ${{ inputs.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read image tag
+        id: version
+        env:
+          VERSION_FILE: ${{ inputs.version_file }}
+          FUNCTION_KEY: ${{ inputs.function_key }}
+        run: |
+          set -euo pipefail
+          if [ -n "$VERSION_FILE" ]; then
+            version=$(grep '^version =' "$VERSION_FILE" | sed 's/version = "\(.*\)"/\1/')
+          else
+            version=$(awk -v key="$FUNCTION_KEY" '
+              $0 ~ "    " key " = {" { inblk=1 }
+              inblk && /image_tag/ {
+                gsub(/"/, "", $3)
+                print $3
+                exit
+              }
+              inblk && /^    }/ { inblk=0 }
+            ' infra/aws/52-lambda/locals.tf)
+          fi
+          if [ -z "$version" ] || [ "$version" = "latest" ]; then
+            echo "image tag must be a pinned semver, not empty or latest"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ inputs.context }}
+          file: ./${{ inputs.file }}
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ inputs.repository }}:${{ steps.version.outputs.version }}
+            ${{ steps.ecr.outputs.registry }}/${{ inputs.repository }}:latest

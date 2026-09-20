@@ -1,0 +1,106 @@
+name: Detect changed paths
+description: Sets backend/cleanup/authorizer/infra outputs from a git diff. Infra layers are discovered from infra/aws/NN-* directories.
+
+inputs:
+  base:
+    description: Base SHA (PR base or previous main tip)
+    required: true
+  head:
+    description: Head SHA
+    required: true
+
+outputs:
+  backend:
+    description: backend/ changed
+    value: ${{ steps.detect.outputs.backend }}
+  cleanup:
+    description: cleanup-trigger/ changed
+    value: ${{ steps.detect.outputs.cleanup }}
+  authorizer:
+    description: authorizer/ changed
+    value: ${{ steps.detect.outputs.authorizer }}
+  infra:
+    description: any tofu layer changed
+    value: ${{ steps.detect.outputs.infra }}
+  has_images:
+    description: any Lambda image context changed
+    value: ${{ steps.detect.outputs.has_images }}
+  layers:
+    description: JSON array of changed layer directory names, smaller to larger
+    value: ${{ steps.detect.outputs.layers }}
+  images:
+    description: JSON array of changed Lambda images to build
+    value: ${{ steps.detect.outputs.images }}
+
+runs:
+  using: composite
+  steps:
+    - id: detect
+      shell: bash
+      env:
+        BASE_SHA: ${{ inputs.base }}
+        HEAD_SHA: ${{ inputs.head }}
+      run: |
+        set -euo pipefail
+        zero=0000000000000000000000000000000000000000
+        if [ "$BASE_SHA" = "$zero" ]; then
+          files=$(git ls-files)
+        else
+          files=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+        fi
+
+        backend=false
+        cleanup=false
+        authorizer=false
+        echo "$files" | grep -q '^backend/' && backend=true || true
+        echo "$files" | grep -q '^cleanup-trigger/' && cleanup=true || true
+        echo "$files" | grep -q '^authorizer/' && authorizer=true || true
+
+        layers=()
+        while IFS= read -r dir; do
+          [ -f "$dir/backend.tf" ] || continue
+          name=$(basename "$dir")
+          if echo "$files" | grep -q "^infra/aws/${name}/"; then
+            layers+=("$name")
+          fi
+        done < <(find infra/aws -mindepth 1 -maxdepth 1 -type d -name '[0-9][0-9]-*' | LC_ALL=C sort)
+
+        if [ ${#layers[@]} -eq 0 ]; then
+          layers_json='[]'
+          infra=false
+        else
+          layers_json=$(printf '%s\n' "${layers[@]}" | jq -R . | jq -s -c .)
+          infra=true
+        fi
+
+        images_items=()
+        if [ "$backend" = true ]; then
+          images_items+=('{"context":"backend","file":"backend/Dockerfile.lambda","repository":"evolvia-backend","version_file":"backend/pyproject.toml","function_key":"backend"}')
+        fi
+        if [ "$cleanup" = true ]; then
+          images_items+=('{"context":"cleanup-trigger","file":"cleanup-trigger/Dockerfile.lambda","repository":"evolvia-cleanup","version_file":"cleanup-trigger/pyproject.toml","function_key":"cleanup"}')
+        fi
+        if [ "$authorizer" = true ]; then
+          images_items+=('{"context":"authorizer","file":"authorizer/Dockerfile.lambda","repository":"evolvia-authorizer","version_file":"","function_key":"authorizer"}')
+        fi
+        if [ ${#images_items[@]} -eq 0 ]; then
+          images_json='[]'
+          has_images=false
+        else
+          images_json=$(printf '%s\n' "${images_items[@]}" | jq -s -c .)
+          has_images=true
+        fi
+
+        {
+          echo "backend=$backend"
+          echo "cleanup=$cleanup"
+          echo "authorizer=$authorizer"
+          echo "infra=$infra"
+          echo "has_images=$has_images"
+          echo "layers<<EOF"
+          echo "$layers_json"
+          echo "EOF"
+          echo "images<<EOF"
+          echo "$images_json"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

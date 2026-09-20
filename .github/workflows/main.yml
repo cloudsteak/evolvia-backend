@@ -1,0 +1,68 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: tofu-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.detect.outputs.infra }}
+      layers: ${{ steps.detect.outputs.layers }}
+      images: ${{ steps.detect.outputs.images }}
+      has_images: ${{ steps.detect.outputs.has_images }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        uses: ./.github/actions/detect-changes
+        with:
+          base: ${{ github.event.before }}
+          head: ${{ github.sha }}
+
+  images:
+    needs: changes
+    if: needs.changes.outputs.has_images == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        image: ${{ fromJSON(needs.changes.outputs.images) }}
+    uses: ./.github/workflows/ecr-image.yml
+    with:
+      context: ${{ matrix.image.context }}
+      file: ${{ matrix.image.file }}
+      repository: ${{ matrix.image.repository }}
+      version_file: ${{ matrix.image.version_file }}
+      function_key: ${{ matrix.image.function_key }}
+    secrets: inherit
+
+  tofu:
+    needs: [changes, images]
+    if: |
+      always() &&
+      needs.changes.result == 'success' &&
+      needs.changes.outputs.infra == 'true' &&
+      (needs.images.result == 'success' || needs.images.result == 'skipped')
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        layer: ${{ fromJSON(needs.changes.outputs.layers) }}
+    uses: ./.github/workflows/tofu-layer.yml
+    with:
+      layer: ${{ matrix.layer }}
+      command: apply
+    secrets: inherit

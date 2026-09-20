@@ -1,0 +1,68 @@
+name: Tofu layer
+
+on:
+  workflow_call:
+    inputs:
+      layer:
+        required: true
+        type: string
+      command:
+        required: true
+        type: string
+    secrets:
+      AWS_GITHUB_ROLE_ARN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  tofu:
+    name: Tofu ${{ inputs.layer }} ${{ inputs.command }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/aws/${{ inputs.layer }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.12.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: AWS profile prod
+        working-directory: ${{ github.workspace }}
+        run: |
+          mkdir -p "$HOME/.aws"
+          umask 077
+          printf '[prod]\naws_access_key_id = %s\naws_secret_access_key = %s\naws_session_token = %s\n' \
+            "$AWS_ACCESS_KEY_ID" "$AWS_SECRET_ACCESS_KEY" "$AWS_SESSION_TOKEN" > "$HOME/.aws/credentials"
+          printf '[profile prod]\nregion = %s\n' "$AWS_REGION" > "$HOME/.aws/config"
+
+      - name: tofu fmt
+        run: tofu fmt -check
+
+      - name: tofu init
+        run: tofu init -input=false
+
+      - name: tofu validate
+        run: tofu validate
+
+      - name: tofu plan
+        if: inputs.command == 'plan'
+        run: tofu plan -input=false -no-color -lock-timeout=5m
+
+      - name: tofu apply
+        if: inputs.command == 'apply'
+        run: tofu apply -input=false -auto-approve -no-color -lock-timeout=5m
