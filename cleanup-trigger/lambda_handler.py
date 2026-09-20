@@ -1,122 +1,111 @@
 import json
 import logging
 import os
-import urllib.error
-import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import boto3
 
-from labs import delete_lab, scan_labs
-
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
 logging.basicConfig(level=_level)
 logging.getLogger().setLevel(_level)
-_PLACEHOLDER = "replace-me"
+
+TIMEOUT = 30
 
 
 def is_expired(lab):
     status = lab.get("status", "ready")
+
+    # Priority: started_at (ready) > error_at (failed) > created_at (pending/fallback)
     timestamp_str = lab.get("started_at") if status == "ready" else lab.get("error_at")
     if not timestamp_str:
         timestamp_str = lab.get("created_at")
+
+    ttl_seconds = lab.get("lab_ttl", 5400)
+
     if not timestamp_str:
+        logging.debug("No timestamp found for lab %s with status %s", lab.get("username"), status)
         return False
 
-    ttl_seconds = int(lab.get("lab_ttl") or 5400)
     try:
         timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)
-    except ValueError:
-        logging.error("Invalid timestamp for %s: %s", lab.get("username"), timestamp_str)
+    except Exception as e:
+        logging.error("Invalid timestamp for %s: %s - %s", lab.get("username"), timestamp_str, e)
         return False
 
     now = datetime.now(timezone.utc)
+
     if status == "ready":
-        expiry = timestamp + timedelta(seconds=ttl_seconds)
+        expiry_time = timestamp + timedelta(seconds=ttl_seconds)
+    elif status == "failed":
+        expiry_time = timestamp + timedelta(seconds=14400)
     elif status == "pending":
-        expiry = timestamp + timedelta(seconds=7200)
+        expiry_time = timestamp + timedelta(seconds=7200)
     else:
-        expiry = timestamp + timedelta(seconds=14400)
-    return now >= expiry
+        expiry_time = timestamp + timedelta(seconds=14400)
+
+    return now >= expiry_time
 
 
-def _github_token():
-    name = os.environ["GITHUB_TOKEN_PATH"]
-    resp = boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)
-    value = resp["Parameter"]["Value"]
-    if not value or value == _PLACEHOLDER:
-        raise RuntimeError("GitHub token is missing or still replace-me")
-    return value
-
-
-def _destroy(lab, token):
-    repo = os.environ["GITHUB_REPO"]
-    workflow = f"{lab.get('cloud_provider') or 'aws'}{os.environ['GITHUB_WORKFLOW_FILENAME']}"
-    url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
-    body = json.dumps(
-        {
-            "ref": "main",
-            "inputs": {
-                "lab": lab["lab_name"],
-                "action": "destroy",
-                "student_username": lab["username"],
-                "student_password": "dummy",
-            },
-        }
-    ).encode()
-    req = urllib.request.Request(
-        url,
-        data=body,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "Content-Type": "application/json",
-        },
+def _invoke(route, body=None):
+    payload = {"routeKey": route}
+    if body is not None:
+        payload["body"] = json.dumps(body)
+    resp = boto3.client("lambda").invoke(
+        FunctionName=os.environ["BACKEND_FUNCTION_NAME"],
+        Qualifier=os.environ["BACKEND_ALIAS"],
+        Payload=json.dumps(payload).encode(),
     )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            ok = 200 <= resp.status < 300
-            if ok:
-                logging.debug("GitHub destroy dispatched for %s", lab.get("username"))
-            return ok
-    except urllib.error.HTTPError as err:
-        logging.error(
-            "GitHub destroy failed for %s: %s %s",
-            lab.get("username"),
-            err.code,
-            err.read().decode()[:500],
-        )
-        return False
+    return json.loads(resp["Payload"].read().decode() or "{}")
 
 
 def cleanup_expired_labs():
-    token = _github_token()
-    cleaned = []
-    for lab in scan_labs():
+    listing = _invoke("GET /lab-status/all")
+    status = listing.get("statusCode", 500)
+    if status >= 400:
+        logging.error("HTTP Error: Backend returned %s for /lab-status/all", status)
+        return
+
+    try:
+        labs_data = json.loads(listing.get("body") or "{}")
+    except json.JSONDecodeError as e:
+        logging.error("Unexpected Error: %s", e)
+        return
+
+    labs = labs_data.get("labs", [])
+    if not isinstance(labs, list):
+        logging.error("Invalid response format: %s", labs_data)
+        return
+
+    for lab in labs:
         username = lab.get("username")
-        if not username or not is_expired(lab):
-            continue
-        logging.info("Expired lab %s status=%s", username, lab.get("status"))
-        if not lab.get("lab_name"):
-            logging.warning("Incomplete lab %s — skip", username)
-            continue
-        if not _destroy(lab, token):
-            continue
-        if delete_lab(username):
-            logging.debug("Deleted DynamoDB item %s", username)
-            cleaned.append(username)
+        logging.info("User: %s - Lab started:%s", username, lab.get("started_at"))
+        if is_expired(lab):
+            logging.info("[EXPIRED] Cleaning up lab %s (status: %s)", username, lab.get("status"))
+            res = _invoke("POST /clean-up-lab", {"username": username})
+            if res.get("statusCode") == 200:
+                logging.info("Lab %s cleaned up", username)
+                del_res = _invoke("POST /lab-delete-internal", {"username": username})
+                if del_res.get("statusCode") == 200:
+                    logging.info("Deleted lab record for %s", username)
+                else:
+                    logging.warning(
+                        "Failed to delete lab %s: %s %s",
+                        username,
+                        del_res.get("statusCode"),
+                        del_res.get("body"),
+                    )
+            else:
+                logging.warning(
+                    "Failed to clean up lab %s: %s %s",
+                    username,
+                    res.get("statusCode"),
+                    res.get("body"),
+                )
         else:
-            logging.error("DynamoDB delete failed for %s after GitHub destroy", username)
-    if cleaned:
-        logging.info("Cleanup finished: deleted %s", cleaned)
-    else:
-        logging.info("Cleanup finished: nothing deleted")
-    return cleaned
+            logging.debug("[ACTIVE] Skipping lab %s, still within TTL", username)
 
 
 def handler(event, context):
-    cleaned = cleanup_expired_labs()
-    return {"cleaned": cleaned}
+    cleanup_expired_labs()
