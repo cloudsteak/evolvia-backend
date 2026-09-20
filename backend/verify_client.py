@@ -6,6 +6,7 @@ import urllib.request
 
 import boto3
 
+logger = logging.getLogger(__name__)
 _SUPPORTED = ("azure", "aws", "gcp")
 
 
@@ -73,7 +74,7 @@ def verify_lab(user, email, cloud, lab):
     except urllib.error.HTTPError as err:
         raw = err.read().decode(errors="replace")
         detail = _upstream_detail(raw)
-        logging.warning(
+        logger.warning(
             "Verify service returned status %s for cloud '%s', lab '%s': %s",
             err.code,
             cloud,
@@ -98,7 +99,7 @@ def verify_lab(user, email, cloud, lab):
         raise VerifyError(502, msg, extra)
     except urllib.error.URLError as err:
         reason = getattr(err, "reason", err)
-        logging.error("Verify service communication error for %s / %s: %s", cloud, lab, reason)
+        logger.error("Verify service communication error for %s / %s: %s", cloud, lab, reason)
         raise VerifyError(
             502,
             f"Verify {cloud} / {lab} unreachable: {reason}",

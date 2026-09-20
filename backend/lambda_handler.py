@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from credentials import generate_credentials
 from emailer import send_lab_ready_email
@@ -10,9 +10,10 @@ from labs import delete_lab, get_lab, put_lab, scan_labs
 from verify_client import VerifyError, verify_lab
 from wordpress import notify as notify_wordpress
 
+logger = logging.getLogger(__name__)
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
 logging.basicConfig(level=_level)
-logging.getLogger().setLevel(_level)
+logger.setLevel(_level)
 
 
 def _route_key(event):
@@ -45,7 +46,7 @@ def _body(event):
 
 
 def _now():
-    return datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
+    return datetime.now(UTC).replace(tzinfo=None).isoformat()
 
 
 def _start_lab(payload):
@@ -60,12 +61,12 @@ def _start_lab(payload):
         "status": "pending",
         "created_at": _now(),
     }
-    logging.info("Storing lab data for %s in DynamoDB", username)
+    logger.info("Storing lab data for %s in DynamoDB", username)
     put_lab(item)
     try:
         ok = dispatch(item, "apply", password=password)
     except Exception:
-        logging.exception("GitHub apply failed for %s", username)
+        logger.exception("GitHub apply failed for %s", username)
         return _json(500, {"message": "Failed to trigger workflow"})
     if not ok:
         return _json(500, {"message": "Failed to trigger workflow"})
@@ -105,7 +106,7 @@ def _lab_ready(payload):
             int(lab.get("lab_ttl") or 0),
         )
     except Exception:
-        logging.exception("SES send failed for %s", username)
+        logger.exception("SES send failed for %s", username)
         return _json(500, {"message": "Failed to send lab-ready email"})
 
     lab["status"] = "ready"
@@ -125,13 +126,13 @@ def _verify_lab(payload):
     try:
         return _json(200, verify_lab(user=user, email=email, cloud=cloud, lab=lab))
     except ValueError:
-        logging.warning("Invalid verify-lab request: cloud=%s lab=%s", cloud, lab)
+        logger.warning("Invalid verify-lab request: cloud=%s lab=%s", cloud, lab)
         return _json(400, {"message": "Invalid verify-lab request."})
     except VerifyError as err:
         body = {"message": err.message, **err.extra}
         return _json(err.status, body)
     except Exception:
-        logging.exception("Unexpected error while processing verify-lab request.")
+        logger.exception("Unexpected error while processing verify-lab request.")
         return _json(500, {"message": "Unexpected server error."})
 
 
@@ -139,14 +140,14 @@ def _clean_up_lab(payload):
     username = (payload.get("username") or "").strip()
     lab = get_lab(username)
     if not lab:
-        logging.warning("Lab data not found for %s", username)
+        logger.warning("Lab data not found for %s", username)
         return _json(404, {"message": "Lab not found"})
     if "password" not in lab or "lab_name" not in lab:
-        logging.warning("Lab data is incomplete for %s", username)
+        logger.warning("Lab data is incomplete for %s", username)
         return _json(500, {"message": "Lab data is incomplete"})
     if not dispatch(lab, "destroy", password="dummy"):
         return _json(502, {"message": f"GitHub destroy failed for {username}"})
-    logging.info("Triggered destroy action for %s", username)
+    logger.info("Triggered destroy action for %s", username)
     return _json(200, {"message": f"Destroy action triggered for {username}"})
 
 
@@ -165,9 +166,9 @@ def _dispatch(event, route):
         if not username:
             return _json(400, {"message": "username required"})
         if delete_lab(username):
-            logging.info("Lab '%s' deleted", username)
+            logger.info("Lab '%s' deleted", username)
             return _json(200, {"message": f"Lab '{username}' deleted"})
-        logging.warning("Lab '%s' not found", username)
+        logger.warning("Lab '%s' not found", username)
         return _json(404, {"message": f"Lab '{username}' not found"})
 
     if route.endswith("/start-lab"):
@@ -190,7 +191,7 @@ def handler(event, context):
     response = _dispatch(event, route)
     status = response["statusCode"]
     if status >= 400:
-        logging.info("route=%s status=%s body=%s", route, status, response.get("body"))
+        logger.info("route=%s status=%s body=%s", route, status, response.get("body"))
     else:
-        logging.debug("route=%s status=%s", route, status)
+        logger.debug("route=%s status=%s", route, status)
     return response

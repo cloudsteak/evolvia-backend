@@ -8,7 +8,7 @@ from jose.exceptions import JWTError
 
 from credentials import generate_credentials
 
-__all__ = ["get_auth0_jwks", "get_rsa_key", "generate_credentials"]
+__all__ = ["generate_credentials", "get_auth0_jwks", "get_rsa_key"]
 
 
 def get_auth0_jwks():

@@ -6,6 +6,8 @@ import urllib.request
 
 import boto3
 
+logger = logging.getLogger(__name__)
+
 
 def _ssm(name):
     return boto3.client("ssm").get_parameter(Name=name, WithDecryption=True)["Parameter"]["Value"]
@@ -41,10 +43,10 @@ def dispatch(lab, action, password="dummy"):
         with urllib.request.urlopen(req, timeout=30) as resp:
             ok = 200 <= resp.status < 300
             if ok:
-                logging.debug("GitHub %s dispatched for %s", action, lab.get("username"))
+                logger.debug("GitHub %s dispatched for %s", action, lab.get("username"))
             return ok
     except urllib.error.HTTPError as err:
-        logging.error(
+        logger.error(
             "GitHub %s failed for %s: %s %s",
             action,
             lab.get("username"),

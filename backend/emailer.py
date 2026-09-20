@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import boto3
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+logger = logging.getLogger(__name__)
 _ALLOWED_TEMPLATES = {"lab_ready_default"}
 _SUBJECT = "[Evolvia] - A labor környezeted elkészült!"
 
@@ -77,7 +78,7 @@ def build_lab_ready_context(
 
 def send_lab_ready_email(username, password, recipient, cloud_provider, ttl_seconds):
     if not recipient:
-        logging.warning("lab-ready email skipped: no recipient for %s", username)
+        logger.warning("lab-ready email skipped: no recipient for %s", username)
         return
     settings = _settings()
     html_content = render_template(
@@ -98,4 +99,4 @@ def send_lab_ready_email(username, password, recipient, cloud_provider, ttl_seco
             "Body": {"Html": {"Data": html_content, "Charset": "UTF-8"}},
         },
     )
-    logging.debug("lab-ready email sent to %s", recipient)
+    logger.debug("lab-ready email sent to %s", recipient)

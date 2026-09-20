@@ -6,7 +6,9 @@ import urllib.parse
 import urllib.request
 
 import boto3
+from botocore.exceptions import ClientError
 
+logger = logging.getLogger(__name__)
 _STATUS = {"ready": "success", "failed": "error"}
 
 
@@ -22,8 +24,8 @@ def notify(lab, status_value):
     try:
         base = _ssm(url_name)
         token = _ssm(token_name)
-    except Exception:
-        logging.warning("WordPress webhook skipped: SSM url/token missing")
+    except ClientError:
+        logger.warning("WordPress webhook skipped: SSM url/token missing")
         return
 
     cloud = (lab.get("cloud_provider") or "").strip().lower()
@@ -38,7 +40,7 @@ def notify(lab, status_value):
             "status": webhook_status,
         }
     ).encode()
-    logging.info("WordPress webhook %s %s", lab.get("email"), lab_id)
+    logger.info("WordPress webhook %s %s", lab.get("email"), lab_id)
     req = urllib.request.Request(
         url,
         data=body,
@@ -49,4 +51,4 @@ def notify(lab, status_value):
         with urllib.request.urlopen(req, timeout=15) as resp:
             resp.read()
     except (urllib.error.URLError, urllib.error.HTTPError) as err:
-        logging.warning("Failed to call WordPress webhook: %s", err)
+        logger.warning("Failed to call WordPress webhook: %s", err)

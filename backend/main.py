@@ -1,30 +1,31 @@
 # --- backend/main.py ---
 
-from fastapi import FastAPI, Depends, HTTPException, status, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
-from jose import jwt, JWTError
-from datetime import datetime
-import requests
 import logging
+from datetime import datetime
+
 import httpx
+import requests
+from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 
 from config import get_settings
+from emailer import send_lab_ready_email
 from labs import delete_lab, get_lab, put_lab, scan_labs
 from models import (
-    LabRequest,
-    LabReadyRequest,
     LabDeleteRequest,
+    LabReadyRequest,
+    LabRequest,
     VerifyLabRequest,
     status_map,
 )
 from utils import generate_credentials, get_rsa_key
-from emailer import send_lab_ready_email
 from verify_client import verify_lab
-
 
 settings = get_settings()
 
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=settings.log_level, format="%(asctime)s [%(levelname)s] %(message)s"
 )
@@ -91,7 +92,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
         return payload
     except JWTError as e:
-        logging.error(f"JWT verification failed: {e}")
+        logger.error(f"JWT verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -129,7 +130,7 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
         "created_at": datetime.utcnow().isoformat(),
     }
 
-    logging.info(f"Storing lab data for {username} in DynamoDB")
+    logger.info(f"Storing lab data for {username} in DynamoDB")
     put_lab(lab_data)
 
     # Trigger GitHub Actions - Apply
@@ -175,7 +176,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
 
         # WordPress webhook küldés hibás státusz esetén is
         if settings.wordpress_webhook_url and settings.wordpress_secret_key:
-            logging.info("Sending webhook to WordPress - error case")
+            logger.info("Sending webhook to WordPress - error case")
             webhook_url = f"{settings.wordpress_webhook_url}?secret_key={settings.wordpress_secret_key}"
             webhook_status = status_map.get(status_value, "pending")
 
@@ -184,10 +185,10 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
             name = lab_data.get("lab_name", "").strip().lower()
             lab_id = f"{cloud}-{name}" if cloud and name else "unknown"
 
-            logging.info(
+            logger.info(
                 f"Lab info for {lab_data.get('email')}: {lab_id} - {webhook_status} - status_map.get(status_value, 'pending')"
             )
-            logging.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
+            logger.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
             payload = {
                 "email": lab_data.get("email"),
                 "lab_id": lab_id,
@@ -197,7 +198,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
                 response = requests.post(webhook_url, json=payload)
                 response.raise_for_status()
             except requests.RequestException as e:
-                logging.warning(f"Failed to call WordPress webhook: {str(e)}")
+                logger.warning(f"Failed to call WordPress webhook: {e!s}")
 
         return {"message": f"Lab {username} reported status: {status_value}"}
 
@@ -216,7 +217,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
 
     # WordPress webhook hívása ready esetén
     if settings.wordpress_webhook_url and settings.wordpress_secret_key:
-        logging.info("Sending webhook to WordPress - error case")
+        logger.info("Sending webhook to WordPress - error case")
         webhook_url = f"{settings.wordpress_webhook_url}?secret_key={settings.wordpress_secret_key}"
         webhook_status = status_map.get("ready", "pending")
 
@@ -225,10 +226,10 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
         name = lab_data.get("lab_name", "").strip().lower()
         lab_id = f"{cloud}-{name}" if cloud and name else "unknown"
 
-        logging.info(
+        logger.info(
             f"Lab info for {lab_data.get('email')}: {lab_id} - {webhook_status} - status_map.get('ready', 'pending')"
         )
-        logging.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
+        logger.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
 
         payload = {
             "email": lab_data.get("email"),
@@ -239,7 +240,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
             response = requests.post(webhook_url, json=payload)
             response.raise_for_status()
         except requests.RequestException as e:
-            logging.warning(f"Failed to call WordPress webhook: {str(e)}")
+            logger.warning(f"Failed to call WordPress webhook: {e!s}")
 
     return {
         "message": f"Lab {username} marked as ready, email sent, WordPress notified"
@@ -252,10 +253,10 @@ def delete_lab_internal(
 ):
 
     if delete_lab(request.username):
-        logging.info(f"Lab '{request.username}' deleted")
+        logger.info(f"Lab '{request.username}' deleted")
         return {"message": f"Lab '{request.username}' deleted"}
 
-    logging.warning(f"Lab '{request.username}' not found")
+    logger.warning(f"Lab '{request.username}' not found")
     raise HTTPException(status_code=404, detail=f"Lab '{request.username}' not found")
 
 
@@ -265,11 +266,11 @@ async def clean_up_lab(
 ):
     lab = get_lab(request.username)
     if not lab:
-        logging.warning(f"Lab data not found for {request.username}")
+        logger.warning(f"Lab data not found for {request.username}")
         raise HTTPException(status_code=404, detail="Lab not found")
 
     if "password" not in lab or "lab_name" not in lab:
-        logging.warning(f"Lab data is incomplete for {request.username}")
+        logger.warning(f"Lab data is incomplete for {request.username}")
         raise HTTPException(status_code=500, detail="Lab data is incomplete")
 
     await trigger_github_workflow(
@@ -280,7 +281,7 @@ async def clean_up_lab(
         cloud_provider=lab["cloud_provider"],
     )
 
-    logging.info(f"Triggered destroy action for {request.username}")
+    logger.info(f"Triggered destroy action for {request.username}")
     return {"message": f"Destroy action triggered for {request.username}"}
 
 
@@ -298,11 +299,11 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
         )
         return result
     except ValueError as error:
-        logging.warning("Invalid verify-lab request: %s", error)
+        logger.warning("Invalid verify-lab request: %s", error)
         raise HTTPException(status_code=400, detail="Invalid verify-lab request.")
     except httpx.HTTPStatusError as error:
         upstream_status = error.response.status_code
-        logging.warning(
+        logger.warning(
             "Verify service returned status %s for cloud '%s', lab '%s'.",
             upstream_status,
             request.cloud,
@@ -314,10 +315,10 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
             status_code=502, detail="Verify service is temporarily unavailable."
         )
     except httpx.HTTPError as error:
-        logging.error("Verify service communication error: %s", error)
+        logger.error("Verify service communication error: %s", error)
         raise HTTPException(
             status_code=502, detail="Verify service is temporarily unavailable."
         )
     except Exception:
-        logging.exception("Unexpected error while processing verify-lab request.")
+        logger.exception("Unexpected error while processing verify-lab request.")
         raise HTTPException(status_code=500, detail="Unexpected server error.")
