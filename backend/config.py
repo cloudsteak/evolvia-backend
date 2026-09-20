@@ -7,11 +7,6 @@ class Settings:
     # Logging
     log_level: str
 
-    # Redis
-    redis_host: str
-    redis_port: int
-    redis_db: int
-
     # Auth0
     auth0_domain: str
     auth0_audience: str
@@ -51,10 +46,6 @@ def get_settings() -> Settings:
     return Settings(
         log_level=os.getenv("LOG_LEVEL", "INFO"),
         
-        redis_host=os.getenv("REDIS_HOST", "localhost"),
-        redis_port=int(os.getenv("REDIS_PORT", 6379)),
-        redis_db=int(os.getenv("REDIS_DB", 0)),
-
         auth0_domain=os.environ["AUTH0_DOMAIN"],
         auth0_audience=os.environ["AUTH0_AUDIENCE"],
         auth0_algorithms=os.getenv("AUTH0_ALGORITHMS", "RS256"),

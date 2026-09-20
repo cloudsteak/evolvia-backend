@@ -3,15 +3,14 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
-from redis import Redis
 from jose import jwt, JWTError
 from datetime import datetime
 import requests
-import json
 import logging
 import httpx
 
 from config import get_settings
+from labs import delete_lab, get_lab, put_lab, scan_labs
 from models import (
     LabRequest,
     LabReadyRequest,
@@ -32,13 +31,6 @@ logging.basicConfig(
 
 app = FastAPI(docs_url="/docs", redoc_url=None)
 security = HTTPBearer()
-
-
-redis_client = Redis(
-    host=settings.redis_host,
-    port=settings.redis_port,
-    db=settings.redis_db,
-)
 
 
 async def trigger_github_workflow(
@@ -137,9 +129,8 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
         "created_at": datetime.utcnow().isoformat(),
     }
 
-    # Store lab metadata (no TTL!)
-    logging.info(f"Storing lab data for {username} in Redis")
-    redis_client.set(f"lab:{username}", json.dumps(lab_data))
+    logging.info(f"Storing lab data for {username} in DynamoDB")
+    put_lab(lab_data)
 
     # Trigger GitHub Actions - Apply
     await trigger_github_workflow(
@@ -159,21 +150,7 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
 
 @app.get("/lab-status/all")
 def lab_status_all(_: str = Depends(verify_internal_secret)):
-    keys = redis_client.keys("lab:*")
-    labs = []
-
-    for key in keys:
-        username = key.decode().split(":")[1]
-        lab_raw = redis_client.get(key)
-        if not lab_raw:
-            continue
-        lab_data = json.loads(lab_raw)
-        ttl = redis_client.ttl(key)
-        logging.info(f"Lab {username} - TTL: {ttl}")
-        lab_data["username"] = username
-        labs.append(lab_data)
-
-    return JSONResponse(content={"labs": labs})
+    return JSONResponse(content={"labs": scan_labs()})
 
 
 @app.post("/lab-ready")
@@ -182,12 +159,9 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     username = request.username
     status_value = request.status.lower()
 
-    key = f"lab:{username}"
-    lab_raw = redis_client.get(key)
-    if not lab_raw:
+    lab_data = get_lab(username)
+    if not lab_data:
         raise HTTPException(status_code=404, detail="Lab not found")
-
-    lab_data = json.loads(lab_raw)
 
     if lab_data.get("status") == "ready":
         return {"message": "Lab already marked as ready"}
@@ -197,7 +171,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     if status_value != "ready":
         lab_data["status"] = status_value
         lab_data["error_at"] = now
-        redis_client.set(key, json.dumps(lab_data))
+        put_lab(lab_data)
 
         # WordPress webhook küldés hibás státusz esetén is
         if settings.wordpress_webhook_url and settings.wordpress_secret_key:
@@ -239,7 +213,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
         cloud_provider=lab_data["cloud_provider"],
         ttl_seconds=lab_data["lab_ttl"],
     )
-    redis_client.set(key, json.dumps(lab_data))
+    put_lab(lab_data)
 
     # WordPress webhook hívása ready esetén
     if settings.wordpress_webhook_url and settings.wordpress_secret_key:
@@ -278,32 +252,26 @@ def delete_lab_internal(
     request: LabDeleteRequest, _: str = Depends(verify_internal_secret)
 ):
 
-    key = f"lab:{request.username}"
-    result = redis_client.delete(key)
+    if delete_lab(request.username):
+        logging.info(f"Lab '{request.username}' deleted")
+        return {"message": f"Lab '{request.username}' deleted"}
 
-    if result == 1:
-        logging.info(f"Redis key '{key}' deleted successfully")
-        return {"message": f"Redis key '{key}' deleted successfully"}
-    else:
-        logging.warning(f"Redis key '{key}' not found")
-        raise HTTPException(status_code=404, detail=f"Redis key '{key}' not found")
+    logging.warning(f"Lab '{request.username}' not found")
+    raise HTTPException(status_code=404, detail=f"Lab '{request.username}' not found")
 
 
 @app.post("/clean-up-lab")
 async def clean_up_lab(
     request: LabDeleteRequest, _: str = Depends(verify_internal_secret)
 ):
-    key = f"lab:{request.username}"
-    lab_raw = redis_client.get(key)
-    if not lab_raw:
-        logging.warning(f"Lab data not found in Redis for {request.username}")
+    lab = get_lab(request.username)
+    if not lab:
+        logging.warning(f"Lab data not found for {request.username}")
         raise HTTPException(status_code=404, detail="Lab not found")
 
-    lab = json.loads(lab_raw)
-
     if "password" not in lab or "lab_name" not in lab:
-        logging.warning(f"Lab data is incomplete in Redis for {request.username}")
-        raise HTTPException(status_code=500, detail="Lab data is incomplete in Redis")
+        logging.warning(f"Lab data is incomplete for {request.username}")
+        raise HTTPException(status_code=500, detail="Lab data is incomplete")
 
     await trigger_github_workflow(
         username=request.username,
@@ -314,7 +282,6 @@ async def clean_up_lab(
     )
 
     logging.info(f"Triggered destroy action for {request.username}")
-    # Remove lab metadata from Redis
     return {"message": f"Destroy action triggered for {request.username}"}
 
 
