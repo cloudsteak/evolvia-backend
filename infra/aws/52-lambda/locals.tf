@@ -24,7 +24,7 @@ locals {
   functions = {
     backend = {
       name      = "${local.prefix}-backend"
-      image_tag = "1.0.12"
+      image_tag = "1.0.13"
       timeout   = 60
       log_level = "DEBUG"
       ses       = true
