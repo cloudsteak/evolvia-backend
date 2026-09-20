@@ -85,17 +85,9 @@ cd infra/aws/52-lambda
 tofu apply
 ```
 
-Ha a paraméter már létezik (`ParameterAlreadyExists`): **import**, ne overwrite (az `replace-me`-t ráírná).
+A három API-kulcsot te írod (`put-parameter`). A tofu csak a pathot ismeri (env + IAM), a paramétert nem kezeli.
 
-```bash
-cd infra/aws/52-lambda
-tofu import 'aws_ssm_parameter.api_keys["wordpress"]' /prod/evolvia/api-keys/wordpress
-tofu import 'aws_ssm_parameter.api_keys["github"]' /prod/evolvia/api-keys/github
-tofu import 'aws_ssm_parameter.api_keys["internal"]' /prod/evolvia/api-keys/internal
-tofu apply
-```
-
-A három SecureStringt te írod felül (`replace-me` nem kulcs). Új kulcs (első feltöltés és **rotation** ugyanaz):
+Új kulcs (első feltöltés és **rotation** ugyanaz):
 
 ```bash
 openssl rand -hex 32
@@ -135,7 +127,7 @@ Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-
 
 ## Cleanup (3e)
 
-Repo, portal, verify URL, WP webhook **nem** locals: Parameter Store, String. Workflow suffix (`-lab-manager.yaml`) locals. Token/key: SecureString. Tofu csak path + `replace-me` (`ignore_changes`). Érték: `put-parameter`. Ha a paraméter már van: import, ne overwrite tofu-val.
+Repo, portal, verify URL, WP webhook **nem** locals: Parameter Store (`put-parameter`). Workflow suffix (`-lab-manager.yaml`) locals. Tofu csak a pathot ismeri (env + IAM).
 
 A GCP verify host a régi cluster DNS — Lambdából nem elérhető, amíg nincs publikus URL.
 
@@ -153,20 +145,9 @@ aws ssm put-parameter --name /prod/evolvia/verify/gcp/key --type SecureString --
 aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-token --type SecureString --overwrite --value '…'
 ```
 
-Import, ha AWS-ben már megvan, state-ben nem:
-
-```bash
-tofu import 'aws_ssm_parameter.config["github_repo"]' /prod/evolvia/github/repo
-tofu import 'aws_ssm_parameter.config["portal_azure"]' /prod/evolvia/portal/azure
-tofu import 'aws_ssm_parameter.config["portal_aws"]' /prod/evolvia/portal/aws
-```
-
 ```bash
 export AWS_PROFILE=prod
 export AWS_REGION=eu-north-1
-
-# ha még nincs a state-ben, de AWS-ben igen:
-# tofu import aws_ssm_parameter.github_token /prod/evolvia/github/token
 
 aws ssm put-parameter --name /prod/evolvia/github/token --type SecureString --overwrite --value '…'
 

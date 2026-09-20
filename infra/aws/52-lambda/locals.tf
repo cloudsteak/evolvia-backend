@@ -4,7 +4,6 @@ locals {
   alias_name    = "live"
   ecr           = data.terraform_remote_state.ecr.outputs.repositories
   api_keys_path            = "/${local.env}/${local.prefix}/api-keys"
-  api_key_names            = toset(["wordpress", "github", "internal"])
   github_path               = "/${local.env}/${local.prefix}/github"
   github_token_path         = "${local.github_path}/token"
   github_repo_path          = "${local.github_path}/repo"
@@ -18,17 +17,11 @@ locals {
   wordpress_webhook_url_path   = "${local.wordpress_path}/webhook-url"
   wordpress_webhook_token_path = "${local.wordpress_path}/webhook-token"
 
-  config_parameters = {
-    github_repo  = local.github_repo_path
-    portal_azure = local.portal_azure_url_path
-    portal_aws   = local.portal_aws_url_path
-  }
-
   functions = {
     backend = {
       name      = "${local.prefix}-backend"
-      image_tag = "1.0.8"
-      timeout   = 30
+      image_tag = "1.0.9"
+      timeout   = 60
       log_level = "DEBUG"
       ses       = true
       dynamodb  = true
