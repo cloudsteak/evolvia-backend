@@ -3,25 +3,30 @@ locals {
   env           = "prod"
   alias_name    = "live"
   ecr           = data.terraform_remote_state.ecr.outputs.repositories
-  api_keys_path = "/${local.env}/${local.prefix}/api-keys"
-  api_key_names  = toset(["wordpress", "github", "internal"])
+  api_keys_path            = "/${local.env}/${local.prefix}/api-keys"
+  api_key_names            = toset(["wordpress", "github", "internal"])
+  github_token_path        = "/${local.env}/${local.prefix}/github/token"
+  github_repo              = "cloudsteak/evolvia-labs"
+  github_workflow_filename = "-lab.yml"
 
   functions = {
     backend = {
       name      = "${local.prefix}-backend"
-      image_tag = "1.0.3"
+      image_tag = "1.0.4"
       timeout   = 30
       ses       = true
       dynamodb  = true
       ssm       = false
+      github    = false
     }
     cleanup = {
       name      = "${local.prefix}-cleanup"
-      image_tag = "1.0.0"
+      image_tag = "1.0.1"
       timeout   = 60
       ses       = false
       dynamodb  = true
       ssm       = false
+      github    = true
     }
     authorizer = {
       name      = "${local.prefix}-authorizer"
@@ -30,6 +35,7 @@ locals {
       ses       = false
       dynamodb  = false
       ssm       = true
+      github    = false
     }
   }
 

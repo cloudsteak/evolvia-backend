@@ -107,6 +107,29 @@ resource "aws_iam_role_policy" "ssm" {
   })
 }
 
+resource "aws_iam_role_policy" "github_token" {
+  for_each = { for k, v in local.functions : k => v if v.github }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-github"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.github_token_path}",
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "github_lambda" {
   name = local.github_lambda_policy_name
   role = local.github_backend_role_name

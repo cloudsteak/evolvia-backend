@@ -9,3 +9,13 @@ resource "aws_ssm_parameter" "api_keys" {
     ignore_changes = [value]
   }
 }
+
+resource "aws_ssm_parameter" "github_token" {
+  name  = local.github_token_path
+  type  = "SecureString"
+  value = "replace-me"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

@@ -32,6 +32,11 @@ resource "aws_lambda_function" "this" {
       each.value.ssm ? {
         API_KEYS_PATH = local.api_keys_path
       } : {},
+      each.value.github ? {
+        GITHUB_REPO               = local.github_repo
+        GITHUB_WORKFLOW_FILENAME  = local.github_workflow_filename
+        GITHUB_TOKEN_PATH         = local.github_token_path
+      } : {},
     )
   }
 
