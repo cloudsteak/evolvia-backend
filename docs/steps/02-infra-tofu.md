@@ -135,9 +135,21 @@ Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-
 
 ## Cleanup (3e)
 
-A 52 `locals`: `github_repo`, `github_workflow_filename` — egyezzen a lab provision repo/workflow nevével (`{cloud}{suffix}`, pl. `aws-lab.yml`).
+Repo és portal URL **nem** locals: Parameter Store, String. Workflow suffix (`-lab.yml`) locals. Token: SecureString. Tofu csak path + `replace-me` (`ignore_changes`). Érték: `put-parameter`. Ha a paraméter már van: import, ne overwrite tofu-val.
 
-Token: Parameter Store `/prod/evolvia/github/token` (PAT, nem az API-key). Ha a paraméter már van: import, ne overwrite.
+```bash
+aws ssm put-parameter --name /prod/evolvia/github/repo --type String --overwrite --value 'cloudsteak/evolvia-labs'
+aws ssm put-parameter --name /prod/evolvia/portal/azure --type String --overwrite --value 'https://portal.azure.com'
+aws ssm put-parameter --name /prod/evolvia/portal/aws --type String --overwrite --value 'https://evolvia.signin.aws.amazon.com/console'
+```
+
+Import, ha AWS-ben már megvan, state-ben nem:
+
+```bash
+tofu import 'aws_ssm_parameter.config["github_repo"]' /prod/evolvia/github/repo
+tofu import 'aws_ssm_parameter.config["portal_azure"]' /prod/evolvia/portal/azure
+tofu import 'aws_ssm_parameter.config["portal_aws"]' /prod/evolvia/portal/aws
+```
 
 ```bash
 export AWS_PROFILE=prod
