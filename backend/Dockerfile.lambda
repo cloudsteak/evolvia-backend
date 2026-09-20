@@ -1,5 +1,5 @@
 FROM public.ecr.aws/lambda/python:3.13
 
-COPY lambda_handler.py labs.py credentials.py ${LAMBDA_TASK_ROOT}/
+COPY lambda_handler.py labs.py credentials.py emailer.py github.py lab_ready_default.html ${LAMBDA_TASK_ROOT}/
 
 CMD ["lambda_handler.handler"]

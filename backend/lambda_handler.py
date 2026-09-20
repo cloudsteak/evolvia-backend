@@ -4,6 +4,8 @@ import os
 from datetime import datetime, timezone
 
 from credentials import generate_credentials
+from emailer import send_lab_ready_email
+from github import dispatch
 from labs import delete_lab, get_lab, put_lab, scan_labs
 
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
@@ -83,6 +85,18 @@ def _lab_ready(payload):
         put_lab(lab)
         return _json(200, {"message": f"Lab {username} reported status: {status_value}"})
 
+    try:
+        send_lab_ready_email(
+            username,
+            lab.get("password") or "",
+            lab.get("email") or "",
+            lab.get("cloud_provider") or "aws",
+            int(lab.get("lab_ttl") or 0),
+        )
+    except Exception:
+        logging.exception("SES send failed for %s", username)
+        return _json(500, {"message": "Failed to send lab-ready email"})
+
     lab["status"] = "ready"
     lab["started_at"] = now
     put_lab(lab)
@@ -93,9 +107,14 @@ def _clean_up_lab(payload):
     username = (payload.get("username") or "").strip()
     lab = get_lab(username)
     if not lab:
+        logging.warning("Lab data not found for %s", username)
         return _json(404, {"message": "Lab not found"})
-    if "lab_name" not in lab:
+    if "password" not in lab or "lab_name" not in lab:
+        logging.warning("Lab data is incomplete for %s", username)
         return _json(500, {"message": "Lab data is incomplete"})
+    if not dispatch(lab, "destroy", password="dummy"):
+        return _json(502, {"message": f"GitHub destroy failed for {username}"})
+    logging.info("Triggered destroy action for %s", username)
     return _json(200, {"message": f"Destroy action triggered for {username}"})
 
 
@@ -114,7 +133,9 @@ def _dispatch(event, route):
         if not username:
             return _json(400, {"message": "username required"})
         if delete_lab(username):
+            logging.info("Lab '%s' deleted", username)
             return _json(200, {"message": f"Lab '{username}' deleted"})
+        logging.warning("Lab '%s' not found", username)
         return _json(404, {"message": f"Lab '{username}' not found"})
 
     if route.endswith("/start-lab"):

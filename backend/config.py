@@ -24,12 +24,6 @@ class Settings:
     # Internal
     internal_secret: str
 
-    # Messenger service
-    messenger_host: str
-    messenger_path: str
-    messenger_template: str
-    internal_messenger_api_key: str
-
     # Verify service
     verify_lab_azure_host: str
     verify_lab_azure_path: str
@@ -58,11 +52,6 @@ def get_settings() -> Settings:
         wordpress_secret_key=os.getenv("WORDPRESS_SECRET_KEY"),
 
         internal_secret=os.environ["INTERNAL_SECRET"],
-
-        messenger_host=os.environ["MESSENGER_HOST"],
-        messenger_path=os.environ["MESSENGER_PATH"],
-        messenger_template=os.getenv("MESSENGER_TEMPLATE", "lab_ready_default"),
-        internal_messenger_api_key=os.environ["INTERNAL_MESSENGER_API_KEY"],
 
         verify_lab_azure_host=os.environ["VERIFY_LAB_AZURE_HOST"],
         verify_lab_azure_path=os.environ["VERIFY_LAB_AZURE_PATH"],

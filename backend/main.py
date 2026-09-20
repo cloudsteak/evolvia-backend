@@ -19,7 +19,7 @@ from models import (
     status_map,
 )
 from utils import generate_credentials, get_rsa_key
-from messenger_client import send_lab_ready_email
+from emailer import send_lab_ready_email
 from verify_client import verify_lab
 
 
@@ -206,12 +206,11 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     lab_data["started_at"] = now
 
     send_lab_ready_email(
-        settings=settings,
-        username=username,
-        password=lab_data["password"],
-        recipient=lab_data["email"],
-        cloud_provider=lab_data["cloud_provider"],
-        ttl_seconds=lab_data["lab_ttl"],
+        username,
+        lab_data["password"],
+        lab_data["email"],
+        lab_data["cloud_provider"],
+        lab_data["lab_ttl"],
     )
     put_lab(lab_data)
 
