@@ -23,7 +23,10 @@ resource "aws_iam_role" "github_actions" {
             "${local.oidc_host}:aud" = "sts.amazonaws.com"
           }
           StringLike = {
-            "${local.oidc_host}:sub" = "repo:${var.github_org}/${each.key}:ref:refs/heads/main"
+            "${local.oidc_host}:sub" = [
+              "repo:${var.github_org}/${each.key}:ref:refs/heads/main",
+              "repo:${var.github_org}/${each.key}:pull_request",
+            ]
           }
         }
       }

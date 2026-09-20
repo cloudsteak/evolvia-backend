@@ -2,7 +2,7 @@
 
 Átállás **2a**. Apply kész. Következő: 20-certificates (kész).
 
-GitHub Actions OIDC provider + deploy role az `evolvia-backend` repóra (`main`). ECR jogosultság nincs itt — azt a 50-ecr rakja a role-ra, remote state-ből.
+GitHub Actions OIDC provider + deploy role az `evolvia-backend` repóra (`main` és `pull_request`). ECR push joga a 50-ben, Lambda update a 52-ben, tofu plan/apply a 12 `{role}-tofu` policyban.
 
 ## State
 
