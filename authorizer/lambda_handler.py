@@ -16,9 +16,9 @@ def _load_keys():
     if _keys is not None:
         return _keys
 
-    path = os.environ["API_KEYS_PATH"]
+    name = os.environ["SSM_API_KEYS"]
     resp = boto3.client("ssm").get_parameters_by_path(
-        Path=path,
+        Path=name,
         Recursive=True,
         WithDecryption=True,
     )

@@ -123,7 +123,8 @@ def _verify_lab(payload):
         logging.warning("Invalid verify-lab request: cloud=%s lab=%s", cloud, lab)
         return _json(400, {"message": "Invalid verify-lab request."})
     except VerifyError as err:
-        return _json(err.status, {"message": err.message})
+        body = {"message": err.message, **err.extra}
+        return _json(err.status, body)
     except Exception:
         logging.exception("Unexpected error while processing verify-lab request.")
         return _json(500, {"message": "Unexpected server error."})

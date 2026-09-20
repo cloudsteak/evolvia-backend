@@ -27,8 +27,8 @@ def _ssm(name):
 
 def _settings():
     return SimpleNamespace(
-        portal_azure_url=_ssm(os.environ["PORTAL_AZURE_URL_PATH"]),
-        portal_aws_url=_ssm(os.environ["PORTAL_AWS_URL_PATH"]),
+        portal_azure_url=_ssm(os.environ["SSM_PORTAL_AZURE_URL"]),
+        portal_aws_url=_ssm(os.environ["SSM_PORTAL_AWS_URL"]),
         email_sender=os.environ["SES_FROM_ADDRESS"],
         sender_name="Cloud Mentor",
     )

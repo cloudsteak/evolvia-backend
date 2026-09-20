@@ -20,8 +20,8 @@ def _ssm(name):
 
 
 def dispatch(lab, action, password="dummy"):
-    repo = _ssm(os.environ["GITHUB_REPO_PATH"])
-    token = _ssm(os.environ["GITHUB_TOKEN_PATH"])
+    repo = _ssm(os.environ["SSM_GITHUB_REPO"])
+    token = _ssm(os.environ["SSM_GITHUB_TOKEN"])
     workflow = f"{lab.get('cloud_provider') or 'aws'}{os.environ['GITHUB_WORKFLOW_FILENAME']}"
     url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches"
     body = json.dumps(

@@ -1,6 +1,6 @@
 [project]
 name = "evolvia-backend-core"
-version = "1.0.9"
+version = "1.0.12"
 description = "Evolvia Lab management backend service. Python 3.13 required."
 authors = [{name = "CloudSteak"}]
 readme = "README.md"

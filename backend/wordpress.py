@@ -22,13 +22,13 @@ def _ssm(name):
 
 
 def notify(lab, status_value):
-    url_path = os.environ.get("WORDPRESS_WEBHOOK_URL_PATH")
-    token_path = os.environ.get("WORDPRESS_WEBHOOK_TOKEN_PATH")
-    if not url_path or not token_path:
+    url_name = os.environ.get("SSM_WORDPRESS_WEBHOOK_URL")
+    token_name = os.environ.get("SSM_WORDPRESS_WEBHOOK_TOKEN")
+    if not url_name or not token_name:
         return
     try:
-        base = _ssm(url_path)
-        token = _ssm(token_path)
+        base = _ssm(url_name)
+        token = _ssm(token_name)
     except Exception:
         logging.warning("WordPress webhook skipped: SSM url/token missing")
         return
