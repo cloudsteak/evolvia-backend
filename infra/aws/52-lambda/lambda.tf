@@ -30,9 +30,9 @@ resource "aws_lambda_function" "this" {
         LABS_TABLE_NAME = data.terraform_remote_state.dynamodb.outputs.labs_table_name
       } : {},
       each.value.ses ? {
-        SES_FROM_ADDRESS      = data.terraform_remote_state.ses.outputs.from_address
-        SSM_PORTAL_AZURE_URL  = local.ssm_portal_azure_url
-        SSM_PORTAL_AWS_URL    = local.ssm_portal_aws_url
+        SES_FROM_ADDRESS     = data.terraform_remote_state.ses.outputs.from_address
+        SSM_PORTAL_AZURE_URL = local.ssm_portal_azure_url
+        SSM_PORTAL_AWS_URL   = local.ssm_portal_aws_url
       } : {},
       each.value.ssm ? {
         SSM_API_KEYS = local.ssm_api_keys
