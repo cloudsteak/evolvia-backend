@@ -4,9 +4,10 @@ import time
 
 import boto3
 
+logger = logging.getLogger(__name__)
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
 logging.basicConfig(level=_level)
-logging.getLogger().setLevel(_level)
+logger.setLevel(_level)
 
 _KEYS_TTL_SECONDS = 60
 _keys = None
@@ -46,7 +47,7 @@ def handler(event, context):
     key = _api_key(event)
     authorized = bool(key) and key in _load_keys()
     if authorized:
-        logging.debug("authorized")
+        logger.debug("authorized")
     else:
-        logging.info("unauthorized")
+        logger.info("unauthorized")
     return {"isAuthorized": authorized}
