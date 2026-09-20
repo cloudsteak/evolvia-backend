@@ -10,7 +10,7 @@ Még nincs implementálva. A kód a `backend/` és `cleanup-trigger/` alatt mara
 | 3b | API Lambda — natív handler, path routing. Ne Mangum. |
 | 3c | Authorizer — `X-API-Key` → SSM (wordpress, github, internal). **Előrehozva:** 52 Lambda + SSM, 60 CUSTOM. Infra kész az apply/push után; a 8/5 kliens még Auth0. |
 | 3d | SES emailer — `lab_ready_default.html` + emailer a cm-messengertől. `messenger_client.py` törölve. |
-| 3e | Cleanup Lambda — közvetlen DynamoDB + GitHub destroy. `rate(15 minutes)`. |
+| 3e | Cleanup — DynamoDB scan, lejárt lab: GitHub destroy, majd item törlés. Scheduler 30 perc. Kép `1.0.1`. |
 
 Végpontok: `/`, `/health`, `start-lab`, `lab-ready`, `verify-lab`, `lab-status/all`, `clean-up-lab`, `lab-delete-internal`.
 

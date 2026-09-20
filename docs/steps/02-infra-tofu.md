@@ -132,3 +132,34 @@ Már lefutott.
 ## 60 apply
 
 Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-up.
+
+## Cleanup (3e)
+
+A 52 `locals`: `github_repo`, `github_workflow_filename` — egyezzen a lab provision repo/workflow nevével (`{cloud}{suffix}`, pl. `aws-lab.yml`).
+
+Token: Parameter Store `/prod/evolvia/github/token` (PAT, nem az API-key). Ha a paraméter már van: import, ne overwrite.
+
+```bash
+export AWS_PROFILE=prod
+export AWS_REGION=eu-north-1
+
+# ha még nincs a state-ben, de AWS-ben igen:
+# tofu import aws_ssm_parameter.github_token /prod/evolvia/github/token
+
+aws ssm put-parameter --name /prod/evolvia/github/token --type SecureString --overwrite --value '…'
+
+URI=$(aws ecr describe-repositories --repository-names evolvia-cleanup --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
+aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
+docker buildx build --platform linux/amd64 \
+  --provenance=false --sbom=false \
+  -f cleanup-trigger/Dockerfile.lambda \
+  -t "${URI}:1.0.1" \
+  -t "${URI}:latest" \
+  --push \
+  cleanup-trigger
+
+cd infra/aws/52-lambda
+tofu apply
+```
+
+Scheduler: group `evolvia`, `evolvia-cleanup`, 30 perc. Log: `/aws/lambda/evolvia-cleanup`. GitHub hiba esetén a DynamoDB sort **nem** törli.
