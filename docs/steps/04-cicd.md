@@ -1,17 +1,24 @@
 # 4. CI/CD
 
-Nulláról az első image **laptop**: [02-infra-tofu — első ECR push](./02-infra-tofu.md#első-ecr-push). Main után ugyanez: `.github/workflows/ecr-backend.yml`. OIDC secret: `AWS_GITHUB_ROLE_ARN`.
+PR: csak a változott mappa. Merge (`main`): image push, aztán a változott tofu layerek apply (kisebbtől nagyobbig). A CI nem írja a `locals.tf`-et. `profile = "prod"` marad; a runner OIDC után `~/.aws/credentials` `[prod]` profilt kap.
 
-Két PR, nem egyben:
+| Változás | PR | Merge |
+|----------|----|-------|
+| `backend/` | ruff, version bump (`pyproject.toml`), docker build, pytest ha van | ECR `{verzió}` + `latest` |
+| `cleanup-trigger/` | ugyanaz | ECR `{verzió}` + `latest` |
+| `authorizer/` | ruff, docker build (nincs pyproject; tag a 52 `image_tag`) | ECR, tag a 52 `locals` |
+| `infra/aws/<layer>/` | `tofu fmt` + `validate` + `plan` a **változott** layereken, sorrend a sorszám | `tofu apply` ugyanazokon |
+| más (`docs/`, …) | semmi | semmi |
 
-| PR | Mit | CI AWS-ben |
-|----|-----|------------|
-| 1 | `backend/` + `pyproject.toml` verzió | build + push ECR: **`{verzió}` és `latest`** (ugyanaz a digest; a `latest` mindig az utolsó build) |
-| 2 | te beírod a **verziótaget** `52-lambda` `local.image_tag`-be | `tofu apply` — a Lambda a pinelt taget húzza, **nem** a `latest`-et |
+`infra/00-remote-state` nem tofu layer, nem CI. A layerek listája a `infra/aws/NN-*` mappákból jön, nincs hardcode.
 
-A CI nem írja a `locals.tf`-et. `infra/aws/**` változás: tofu plan/apply. Nincs script, nincs `local-exec`. `profile = "prod"` marad.
+Két PR továbbra is oké (előbb image, aztán 52 `image_tag`). Egy PR is: merge-ön előbb push, aztán 52 apply.
 
-Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart). A mai slim Dockerfile később cserélendő.
+OIDC secret: `AWS_GITHUB_ROLE_ARN`. A 12-es role `main` + `pull_request`. **Először laptop:** `cd infra/aws/12-oidc && tofu apply` — enélkül a PR plan `AssumeRole` fail.
+
+A K8s GHCR workflow-k (`docker-build-lab-*.yml`) még mennek `main`-re, amíg a 9. kivezetés.
+
+Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart). Pinelt semver, nem `latest` a Lambdán.
 
 ## Következő
 

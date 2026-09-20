@@ -52,7 +52,7 @@ docker buildx build --platform linux/amd64 \
   cleanup-trigger
 ```
 
-A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`, `authorizer`). Main után: CI (`ecr-backend.yml`; cleanup/authorizer workflow később).
+A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`, `authorizer`). Main után: [04-cicd](../../../docs/steps/04-cicd.md) (`main.yml`).
 
 ## Authorizer catch-up (3c előre)
 

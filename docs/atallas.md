@@ -15,7 +15,7 @@ Sorrend: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**. A 8. (WordPress)
 | 1 | Remote state bucket | lefuttatva (`AWS_PROFILE=prod`) | [infra/00-remote-state](../infra/00-remote-state/README.md) |
 | 2 | Infra tofu | 12–60 kész | [02-infra-tofu.md](./steps/02-infra-tofu.md) |
 | 3 | Backend kódátírás | nincs | [03-kod.md](./steps/03-kod.md) |
-| 4 | CI/CD | nincs | [04-cicd.md](./steps/04-cicd.md) |
+| 4 | CI/CD | kód kész; 12 apply laptop (OIDC PR + tofu IAM) | [04-cicd.md](./steps/04-cicd.md) |
 | 5 | GitHub lab-ready kliens | nincs | [05-github-lab-ready.md](./steps/05-github-lab-ready.md) |
 | 6 | Próba a next hoston | nincs | [06-proba.md](./steps/06-proba.md) |
 | 7 | DNS átállás | nincs | [07-dns.md](./steps/07-dns.md) |

@@ -73,7 +73,7 @@ Minden tofu layer ugyanaz: `tofu init && tofu apply`. Nincs `local-exec`, nincs 
 
 | Változás | Hol |
 |----------|-----|
-| IAM, DNS, tábla, SES, Lambda héj, API | tofu apply a saját layerben (laptop vagy CI, ugyanaz a parancs) |
-| Python / image | PR1: CI build + ECR push (új tag). PR2: te `local.image_tag` → CI 52 tofu apply |
+| IAM, DNS, tábla, SES, Lambda héj, API | tofu apply a saját layerben (laptop vagy CI, ugyanaz a parancs). PR: csak a változott layer plan. |
+| Python / image | PR: lint + docker build. Merge: ECR push, aztán ha a 52 is változott, apply |
 
 A `00-remote-state` egyszeri bootstrap volt (bucket a `tofu init` előtt); nem tofu layer, nem CI-lépés. Tovább nem ismételjük.
