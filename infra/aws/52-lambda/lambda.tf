@@ -23,11 +23,14 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = merge(
-      {
+      each.value.dynamodb ? {
         LABS_TABLE_NAME = data.terraform_remote_state.dynamodb.outputs.labs_table_name
-      },
+      } : {},
       each.value.ses ? {
         SES_FROM_ADDRESS = data.terraform_remote_state.ses.outputs.from_address
+      } : {},
+      each.value.ssm ? {
+        API_KEYS_PATH = local.api_keys_path
       } : {},
     )
   }

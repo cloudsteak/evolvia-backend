@@ -1,6 +1,6 @@
 # 52-lambda
 
-Apply kész. Függvényhéjak a `local.functions` mapben (`backend`, `cleanup`). OCI image + SnapStart, alias `live`.
+Függvényhéjak a `local.functions` mapben (`backend`, `cleanup`, `authorizer`). OCI image + SnapStart, alias `live`. Minden Lambda itt van.
 
 Image: `{ecr_url}:{local.image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja.
 
@@ -38,7 +38,8 @@ A `create` SnapStart snapshot miatt eltarthat.
 
 ## Név
 
-- `local.functions` — `name`, `image_tag`, `timeout`, `ses`
+- `local.functions` — `name`, `image_tag`, `timeout`, `ses`, `dynamodb`, `ssm`
+- Parameter Store: `/{env}/{prefix}/api-keys/{wordpress,github,internal}` → `/prod/evolvia/api-keys/…` (SecureString). Új érték / rotation: `openssl rand -hex 32`, aztán `put-parameter --overwrite`. Részlet: [02-infra-tofu](../../../docs/steps/02-infra-tofu.md#authorizer-catch-up-3c-előre).
 - role: `{prefix}-lambda-{key}`
 - policies: `{role}-{capability}`; GitHub: `{github-role}-lambda`
 

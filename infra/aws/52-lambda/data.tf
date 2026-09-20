@@ -31,6 +31,10 @@ data "terraform_remote_state" "dynamodb" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
 data "terraform_remote_state" "ecr" {
   backend = "s3"
 

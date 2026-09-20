@@ -37,7 +37,7 @@ resource "aws_iam_role_policy" "logs" {
 }
 
 resource "aws_iam_role_policy" "dynamodb" {
-  for_each = local.functions
+  for_each = { for k, v in local.functions : k => v if v.dynamodb }
 
   name = "${aws_iam_role.this[each.key].name}-dynamodb"
   role = aws_iam_role.this[each.key].id
@@ -77,6 +77,31 @@ resource "aws_iam_role_policy" "ses" {
           "ses:SendRawEmail",
         ]
         Resource = [data.terraform_remote_state.ses.outputs.mail_identity_arn]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ssm" {
+  for_each = { for k, v in local.functions : k => v if v.ssm }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.api_keys_path}",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.api_keys_path}/*",
+        ]
       }
     ]
   })
