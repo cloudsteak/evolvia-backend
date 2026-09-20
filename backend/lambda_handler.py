@@ -58,7 +58,10 @@ def _start_lab(payload):
         "status": "pending",
         "created_at": _now(),
     }
+    logging.info("Storing lab data for %s in DynamoDB", username)
     put_lab(item)
+    if not dispatch(item, "apply", password=password):
+        return _json(500, {"message": "Failed to trigger workflow"})
     return _json(
         200,
         {

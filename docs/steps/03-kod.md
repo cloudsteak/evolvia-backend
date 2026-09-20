@@ -7,7 +7,7 @@ Még nincs implementálva. A kód a `backend/` és `cleanup-trigger/` alatt mara
 | # | Mit |
 |---|-----|
 | 3a | DynamoDB repository — PK `username`. `backend/labs.py`. `main.py` Redis nélkül. Live: `lab-status/all` / `lab-delete-internal` a handlerben. |
-| 3b | API Lambda — natív handler, path routing. Ne Mangum. |
+| 3b | API Lambda — natív handler. `start-lab`: DDB + GitHub apply. |
 | 3c | Authorizer — `X-API-Key` → SSM (wordpress, github, internal). **Előrehozva:** 52 Lambda + SSM, 60 CUSTOM. Infra kész az apply/push után; a 8/5 kliens még Auth0. |
 | 3d | SES — `lab_ready_default.html` + `emailer.py`. `From: Evolvia <noreply@evolvia.hu>`. Azure user `…@evolvia.hu`. `messenger_client.py` törölve. |
 | 3e | Cleanup: `lab-status/all` → lejárt: `clean-up-lab` (GitHub destroy) → `lab-delete-internal` (DDB). |

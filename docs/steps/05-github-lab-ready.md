@@ -1,8 +1,15 @@
 # 5. GitHub lab-ready kliens
 
-Még nincs implementálva.
+A forge `lab-ready-callback` Auth0 helyett `X-API-Key`. A reusable WF `@main`-t hív — merge kell, különben a régi callback fut.
 
-A lab provision workflow `notify:lab` Auth0 tokenjét `X-API-Key`-re cseréli. Ez nem a WordPress — az a 8. lépés.
+GitHub (evolvia-forge):
+
+| | Mit |
+|--|-----|
+| Variable `BACKEND_HOST` | `backend.api.evolvia.hu` (nincs `https://`) |
+| Secret `BACKEND_API_KEY` | SSM `/prod/evolvia/api-keys/github` |
+
+Auth0 secret/var a callbackhoz nem kell.
 
 ## Következő
 

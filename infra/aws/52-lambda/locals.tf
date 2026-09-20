@@ -22,7 +22,7 @@ locals {
   functions = {
     backend = {
       name      = "${local.prefix}-backend"
-      image_tag = "1.0.6"
+      image_tag = "1.0.8"
       timeout   = 30
       log_level = "DEBUG"
       ses       = true
@@ -33,7 +33,7 @@ locals {
     }
     cleanup = {
       name           = "${local.prefix}-cleanup"
-      image_tag      = "1.0.3"
+      image_tag      = "1.0.4"
       timeout        = 60
       log_level      = "DEBUG"
       ses            = false
