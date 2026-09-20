@@ -1,6 +1,6 @@
 # 55-scheduler
 
-EventBridge Scheduler → 52 `cleanup:live`. `rate(15 minutes)`. Group: `{prefix}` (`evolvia`), nem `default`. Olvas: 12, 52. Nincs Route53.
+EventBridge Scheduler → 52 `cleanup:live`. `rate(30 minutes)`. Group: `{prefix}` (`evolvia`), nem `default`. Olvas: 12, 52. Nincs Route53.
 
 `local.schedules` map — most egy kulcs: `cleanup`.
 

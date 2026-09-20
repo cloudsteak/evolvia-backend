@@ -6,7 +6,7 @@ locals {
   schedules = {
     cleanup = {
       name     = "${local.prefix}-cleanup"
-      rate     = "15 minutes"
+      rate     = "30 minutes"
       function = "cleanup"
     }
   }
