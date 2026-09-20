@@ -75,4 +75,5 @@ jobs:
     with:
       layer: ${{ matrix.layer }}
       command: plan
-    secrets: inherit
+    secrets:
+      AWS_GITHUB_ROLE_ARN: ${{ secrets.AWS_GITHUB_ROLE_ARN }}

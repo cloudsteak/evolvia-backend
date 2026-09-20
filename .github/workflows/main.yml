@@ -47,7 +47,8 @@ jobs:
       repository: ${{ matrix.image.repository }}
       version_file: ${{ matrix.image.version_file }}
       function_key: ${{ matrix.image.function_key }}
-    secrets: inherit
+    secrets:
+      AWS_GITHUB_ROLE_ARN: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
 
   tofu:
     needs: [changes, images]
@@ -65,4 +66,5 @@ jobs:
     with:
       layer: ${{ matrix.layer }}
       command: apply
-    secrets: inherit
+    secrets:
+      AWS_GITHUB_ROLE_ARN: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
