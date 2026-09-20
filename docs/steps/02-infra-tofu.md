@@ -135,12 +135,22 @@ Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-
 
 ## Cleanup (3e)
 
-Repo és portal URL **nem** locals: Parameter Store, String. Workflow suffix (`-lab.yml`) locals. Token: SecureString. Tofu csak path + `replace-me` (`ignore_changes`). Érték: `put-parameter`. Ha a paraméter már van: import, ne overwrite tofu-val.
+Repo, portal, verify URL, WP webhook **nem** locals: Parameter Store, String. Workflow suffix (`-lab-manager.yaml`) locals. Token/key: SecureString. Tofu csak path + `replace-me` (`ignore_changes`). Érték: `put-parameter`. Ha a paraméter már van: import, ne overwrite tofu-val.
+
+A GCP verify host a régi cluster DNS — Lambdából nem elérhető, amíg nincs publikus URL.
 
 ```bash
-aws ssm put-parameter --name /prod/evolvia/github/repo --type String --overwrite --value 'cloudsteak/evolvia-labs'
+aws ssm put-parameter --name /prod/evolvia/github/repo --type String --overwrite --value 'cloudsteak/evolvia-forge'
 aws ssm put-parameter --name /prod/evolvia/portal/azure --type String --overwrite --value 'https://portal.azure.com'
 aws ssm put-parameter --name /prod/evolvia/portal/aws --type String --overwrite --value 'https://evolvia.signin.aws.amazon.com/console'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/url --type String --overwrite --value 'https://evolvia-verify-apim.azure-api.net/v1/verify'
+aws ssm put-parameter --name /prod/evolvia/verify/aws/url --type String --overwrite --value 'https://verify-aws.api.cloud-mentor.hu/v1/verify'
+aws ssm put-parameter --name /prod/evolvia/verify/gcp/url --type String --overwrite --value 'http://evolvia-verify-lab-gcp.evolvia-backend-prod.svc.cluster.local:8000/v1/verify'
+aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-url --type String --overwrite --value 'https://evolvia.hu/wp-json/lab-launcher/v1/lab-status-webhook'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/key --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/verify/aws/key --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/verify/gcp/key --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-token --type SecureString --overwrite --value '…'
 ```
 
 Import, ha AWS-ben már megvan, state-ben nem:
