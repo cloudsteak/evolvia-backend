@@ -11,6 +11,8 @@ Apply csak ha a tagelt image már bent van. Az első 52 előtt le kell futnia az
 
 A CI a taget nem írja. Apply csak ha a tagelt image már bent van.
 
+`LOG_LEVEL` minden Lambda env-jén (`functions.*.log_level`, alap `INFO`). Scheduler = cleanup Lambda. `DEBUG`: sikeres hívások is. Jelszó / API-kulcs nincs a logban.
+
 A mai `backend/Dockerfile` (`python:3.13-slim`) custom — a CI image `FROM public.ecr.aws/lambda/python:3.13` (vagy SnapStart label) legyen, különben a SnapStart publish elhasal.
 
 Olvas: 12, 21, 34, 50. Nincs Route53. Image: `50.repositories[<ugyanaz a kulcs>].url` + `image_tag`. Cleanup: `evolvia-cleanup:1.0.0`, nem a backend image.

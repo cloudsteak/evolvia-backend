@@ -23,6 +23,9 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = merge(
+      {
+        LOG_LEVEL = each.value.log_level
+      },
       each.value.dynamodb ? {
         LABS_TABLE_NAME = data.terraform_remote_state.dynamodb.outputs.labs_table_name
       } : {},

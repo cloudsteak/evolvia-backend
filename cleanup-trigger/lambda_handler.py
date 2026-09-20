@@ -9,7 +9,9 @@ import boto3
 
 from labs import delete_lab, scan_labs
 
-logging.basicConfig(level=logging.INFO)
+_level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_level)
+logging.getLogger().setLevel(_level)
 _PLACEHOLDER = "replace-me"
 
 
@@ -76,7 +78,10 @@ def _destroy(lab, token):
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return 200 <= resp.status < 300
+            ok = 200 <= resp.status < 300
+            if ok:
+                logging.debug("GitHub destroy dispatched for %s", lab.get("username"))
+            return ok
     except urllib.error.HTTPError as err:
         logging.error(
             "GitHub destroy failed for %s: %s %s",
@@ -101,7 +106,7 @@ def cleanup_expired_labs():
         if not _destroy(lab, token):
             continue
         if delete_lab(username):
-            logging.info("Deleted DynamoDB item %s", username)
+            logging.debug("Deleted DynamoDB item %s", username)
             cleaned.append(username)
         else:
             logging.error("DynamoDB delete failed for %s after GitHub destroy", username)

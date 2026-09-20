@@ -1,6 +1,11 @@
+import logging
 import os
 
 import boto3
+
+_level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_level)
+logging.getLogger().setLevel(_level)
 
 _PLACEHOLDER = "replace-me"
 _keys = None
@@ -39,4 +44,9 @@ def _api_key(event):
 
 def handler(event, context):
     key = _api_key(event)
-    return {"isAuthorized": bool(key) and key in _load_keys()}
+    authorized = bool(key) and key in _load_keys()
+    if authorized:
+        logging.debug("authorized")
+    else:
+        logging.info("unauthorized")
+    return {"isAuthorized": authorized}

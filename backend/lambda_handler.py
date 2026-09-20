@@ -1,8 +1,14 @@
 import json
+import logging
+import os
 from datetime import datetime, timezone
 
 from credentials import generate_credentials
 from labs import delete_lab, get_lab, put_lab, scan_labs
+
+_level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_level)
+logging.getLogger().setLevel(_level)
 
 
 def _route_key(event):
@@ -93,9 +99,7 @@ def _clean_up_lab(payload):
     return _json(200, {"message": f"Destroy action triggered for {username}"})
 
 
-def handler(event, context):
-    route = _route_key(event)
-
+def _dispatch(event, route):
     if route.endswith(" /health") or route == "GET /health":
         return _json(200, {"status": "ok"})
 
@@ -126,3 +130,14 @@ def handler(event, context):
         return _json(501, {"message": "Not implemented"})
 
     return _json(404, {"message": "Not Found"})
+
+
+def handler(event, context):
+    route = _route_key(event)
+    response = _dispatch(event, route)
+    status = response["statusCode"]
+    if status >= 400:
+        logging.info("route=%s status=%s body=%s", route, status, response.get("body"))
+    else:
+        logging.debug("route=%s status=%s", route, status)
+    return response

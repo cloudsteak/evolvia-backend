@@ -14,6 +14,7 @@ locals {
       name      = "${local.prefix}-backend"
       image_tag = "1.0.4"
       timeout   = 30
+      log_level = "INFO"
       ses       = true
       dynamodb  = true
       ssm       = false
@@ -23,6 +24,7 @@ locals {
       name      = "${local.prefix}-cleanup"
       image_tag = "1.0.1"
       timeout   = 60
+      log_level = "INFO"
       ses       = false
       dynamodb  = true
       ssm       = false
@@ -32,6 +34,7 @@ locals {
       name      = "${local.prefix}-authorizer"
       image_tag = "1.0.0"
       timeout   = 10
+      log_level = "INFO"
       ses       = false
       dynamodb  = false
       ssm       = true
