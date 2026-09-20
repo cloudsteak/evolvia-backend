@@ -1,44 +1,37 @@
 # --- backend/main.py ---
 
-from fastapi import FastAPI, Depends, HTTPException, status, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
-from redis import Redis
-from jose import jwt, JWTError
-from datetime import datetime
-import requests
-import json
 import logging
+from datetime import datetime
+
 import httpx
+import requests
+from fastapi import Depends, FastAPI, Header, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
 
 from config import get_settings
+from emailer import send_lab_ready_email
+from labs import delete_lab, get_lab, put_lab, scan_labs
 from models import (
-    LabRequest,
-    LabReadyRequest,
     LabDeleteRequest,
+    LabReadyRequest,
+    LabRequest,
     VerifyLabRequest,
     status_map,
 )
 from utils import generate_credentials, get_rsa_key
-from messenger_client import send_lab_ready_email
 from verify_client import verify_lab
-
 
 settings = get_settings()
 
+logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=settings.log_level, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
 app = FastAPI(docs_url="/docs", redoc_url=None)
 security = HTTPBearer()
-
-
-redis_client = Redis(
-    host=settings.redis_host,
-    port=settings.redis_port,
-    db=settings.redis_db,
-)
 
 
 async def trigger_github_workflow(
@@ -99,7 +92,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
         )
         return payload
     except JWTError as e:
-        logging.error(f"JWT verification failed: {e}")
+        logger.error(f"JWT verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -137,9 +130,8 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
         "created_at": datetime.utcnow().isoformat(),
     }
 
-    # Store lab metadata (no TTL!)
-    logging.info(f"Storing lab data for {username} in Redis")
-    redis_client.set(f"lab:{username}", json.dumps(lab_data))
+    logger.info(f"Storing lab data for {username} in DynamoDB")
+    put_lab(lab_data)
 
     # Trigger GitHub Actions - Apply
     await trigger_github_workflow(
@@ -159,21 +151,7 @@ async def start_lab(request: LabRequest, token: dict = Depends(verify_token)):
 
 @app.get("/lab-status/all")
 def lab_status_all(_: str = Depends(verify_internal_secret)):
-    keys = redis_client.keys("lab:*")
-    labs = []
-
-    for key in keys:
-        username = key.decode().split(":")[1]
-        lab_raw = redis_client.get(key)
-        if not lab_raw:
-            continue
-        lab_data = json.loads(lab_raw)
-        ttl = redis_client.ttl(key)
-        logging.info(f"Lab {username} - TTL: {ttl}")
-        lab_data["username"] = username
-        labs.append(lab_data)
-
-    return JSONResponse(content={"labs": labs})
+    return JSONResponse(content={"labs": scan_labs()})
 
 
 @app.post("/lab-ready")
@@ -182,12 +160,9 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     username = request.username
     status_value = request.status.lower()
 
-    key = f"lab:{username}"
-    lab_raw = redis_client.get(key)
-    if not lab_raw:
+    lab_data = get_lab(username)
+    if not lab_data:
         raise HTTPException(status_code=404, detail="Lab not found")
-
-    lab_data = json.loads(lab_raw)
 
     if lab_data.get("status") == "ready":
         return {"message": "Lab already marked as ready"}
@@ -197,11 +172,11 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     if status_value != "ready":
         lab_data["status"] = status_value
         lab_data["error_at"] = now
-        redis_client.set(key, json.dumps(lab_data))
+        put_lab(lab_data)
 
         # WordPress webhook küldés hibás státusz esetén is
         if settings.wordpress_webhook_url and settings.wordpress_secret_key:
-            logging.info("Sending webhook to WordPress - error case")
+            logger.info("Sending webhook to WordPress - error case")
             webhook_url = f"{settings.wordpress_webhook_url}?secret_key={settings.wordpress_secret_key}"
             webhook_status = status_map.get(status_value, "pending")
 
@@ -210,10 +185,10 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
             name = lab_data.get("lab_name", "").strip().lower()
             lab_id = f"{cloud}-{name}" if cloud and name else "unknown"
 
-            logging.info(
+            logger.info(
                 f"Lab info for {lab_data.get('email')}: {lab_id} - {webhook_status} - status_map.get(status_value, 'pending')"
             )
-            logging.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
+            logger.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
             payload = {
                 "email": lab_data.get("email"),
                 "lab_id": lab_id,
@@ -223,7 +198,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
                 response = requests.post(webhook_url, json=payload)
                 response.raise_for_status()
             except requests.RequestException as e:
-                logging.warning(f"Failed to call WordPress webhook: {str(e)}")
+                logger.warning(f"Failed to call WordPress webhook: {e!s}")
 
         return {"message": f"Lab {username} reported status: {status_value}"}
 
@@ -232,18 +207,17 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
     lab_data["started_at"] = now
 
     send_lab_ready_email(
-        settings=settings,
-        username=username,
-        password=lab_data["password"],
-        recipient=lab_data["email"],
-        cloud_provider=lab_data["cloud_provider"],
-        ttl_seconds=lab_data["lab_ttl"],
+        username,
+        lab_data["password"],
+        lab_data["email"],
+        lab_data["cloud_provider"],
+        lab_data["lab_ttl"],
     )
-    redis_client.set(key, json.dumps(lab_data))
+    put_lab(lab_data)
 
     # WordPress webhook hívása ready esetén
     if settings.wordpress_webhook_url and settings.wordpress_secret_key:
-        logging.info("Sending webhook to WordPress - error case")
+        logger.info("Sending webhook to WordPress - error case")
         webhook_url = f"{settings.wordpress_webhook_url}?secret_key={settings.wordpress_secret_key}"
         webhook_status = status_map.get("ready", "pending")
 
@@ -252,10 +226,10 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
         name = lab_data.get("lab_name", "").strip().lower()
         lab_id = f"{cloud}-{name}" if cloud and name else "unknown"
 
-        logging.info(
+        logger.info(
             f"Lab info for {lab_data.get('email')}: {lab_id} - {webhook_status} - status_map.get('ready', 'pending')"
         )
-        logging.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
+        logger.info(f"WordPress webhook URL: {settings.wordpress_webhook_url}")
 
         payload = {
             "email": lab_data.get("email"),
@@ -266,7 +240,7 @@ async def lab_ready(request: LabReadyRequest, token: dict = Depends(verify_token
             response = requests.post(webhook_url, json=payload)
             response.raise_for_status()
         except requests.RequestException as e:
-            logging.warning(f"Failed to call WordPress webhook: {str(e)}")
+            logger.warning(f"Failed to call WordPress webhook: {e!s}")
 
     return {
         "message": f"Lab {username} marked as ready, email sent, WordPress notified"
@@ -278,32 +252,26 @@ def delete_lab_internal(
     request: LabDeleteRequest, _: str = Depends(verify_internal_secret)
 ):
 
-    key = f"lab:{request.username}"
-    result = redis_client.delete(key)
+    if delete_lab(request.username):
+        logger.info(f"Lab '{request.username}' deleted")
+        return {"message": f"Lab '{request.username}' deleted"}
 
-    if result == 1:
-        logging.info(f"Redis key '{key}' deleted successfully")
-        return {"message": f"Redis key '{key}' deleted successfully"}
-    else:
-        logging.warning(f"Redis key '{key}' not found")
-        raise HTTPException(status_code=404, detail=f"Redis key '{key}' not found")
+    logger.warning(f"Lab '{request.username}' not found")
+    raise HTTPException(status_code=404, detail=f"Lab '{request.username}' not found")
 
 
 @app.post("/clean-up-lab")
 async def clean_up_lab(
     request: LabDeleteRequest, _: str = Depends(verify_internal_secret)
 ):
-    key = f"lab:{request.username}"
-    lab_raw = redis_client.get(key)
-    if not lab_raw:
-        logging.warning(f"Lab data not found in Redis for {request.username}")
+    lab = get_lab(request.username)
+    if not lab:
+        logger.warning(f"Lab data not found for {request.username}")
         raise HTTPException(status_code=404, detail="Lab not found")
 
-    lab = json.loads(lab_raw)
-
     if "password" not in lab or "lab_name" not in lab:
-        logging.warning(f"Lab data is incomplete in Redis for {request.username}")
-        raise HTTPException(status_code=500, detail="Lab data is incomplete in Redis")
+        logger.warning(f"Lab data is incomplete for {request.username}")
+        raise HTTPException(status_code=500, detail="Lab data is incomplete")
 
     await trigger_github_workflow(
         username=request.username,
@@ -313,8 +281,7 @@ async def clean_up_lab(
         cloud_provider=lab["cloud_provider"],
     )
 
-    logging.info(f"Triggered destroy action for {request.username}")
-    # Remove lab metadata from Redis
+    logger.info(f"Triggered destroy action for {request.username}")
     return {"message": f"Destroy action triggered for {request.username}"}
 
 
@@ -332,11 +299,11 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
         )
         return result
     except ValueError as error:
-        logging.warning("Invalid verify-lab request: %s", error)
+        logger.warning("Invalid verify-lab request: %s", error)
         raise HTTPException(status_code=400, detail="Invalid verify-lab request.")
     except httpx.HTTPStatusError as error:
         upstream_status = error.response.status_code
-        logging.warning(
+        logger.warning(
             "Verify service returned status %s for cloud '%s', lab '%s'.",
             upstream_status,
             request.cloud,
@@ -348,10 +315,10 @@ def verify_lab_endpoint(request: VerifyLabRequest, token: dict = Depends(verify_
             status_code=502, detail="Verify service is temporarily unavailable."
         )
     except httpx.HTTPError as error:
-        logging.error("Verify service communication error: %s", error)
+        logger.error("Verify service communication error: %s", error)
         raise HTTPException(
             status_code=502, detail="Verify service is temporarily unavailable."
         )
     except Exception:
-        logging.exception("Unexpected error while processing verify-lab request.")
+        logger.exception("Unexpected error while processing verify-lab request.")
         raise HTTPException(status_code=500, detail="Unexpected server error.")

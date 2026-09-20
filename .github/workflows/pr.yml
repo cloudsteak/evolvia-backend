@@ -1,0 +1,82 @@
+name: PR
+
+on:
+  pull_request:
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-24.04
+    outputs:
+      backend: ${{ steps.detect.outputs.backend }}
+      cleanup: ${{ steps.detect.outputs.cleanup }}
+      authorizer: ${{ steps.detect.outputs.authorizer }}
+      infra: ${{ steps.detect.outputs.infra }}
+      layers: ${{ steps.detect.outputs.layers }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        uses: ./.github/actions/detect-changes
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.sha }}
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    uses: ./.github/workflows/python-check.yml
+    with:
+      path: backend
+      dockerfile: backend/Dockerfile.lambda
+      version-file: backend/pyproject.toml
+      lockfile: backend/uv.lock
+      base-sha: ${{ github.event.pull_request.base.sha }}
+
+  cleanup:
+    needs: changes
+    if: needs.changes.outputs.cleanup == 'true'
+    uses: ./.github/workflows/python-check.yml
+    with:
+      path: cleanup-trigger
+      dockerfile: cleanup-trigger/Dockerfile.lambda
+      version-file: cleanup-trigger/pyproject.toml
+      lockfile: cleanup-trigger/uv.lock
+      base-sha: ${{ github.event.pull_request.base.sha }}
+
+  authorizer:
+    needs: changes
+    if: needs.changes.outputs.authorizer == 'true'
+    uses: ./.github/workflows/python-check.yml
+    with:
+      path: authorizer
+      dockerfile: authorizer/Dockerfile.lambda
+      base-sha: ${{ github.event.pull_request.base.sha }}
+
+  tofu:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        layer: ${{ fromJSON(needs.changes.outputs.layers) }}
+    uses: ./.github/workflows/tofu-layer.yml
+    with:
+      layer: ${{ matrix.layer }}
+      command: plan
+    secrets:
+      AWS_GITHUB_ROLE_ARN: ${{ secrets.AWS_GITHUB_ROLE_ARN }}

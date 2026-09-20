@@ -25,7 +25,7 @@ source .venv/bin/activate  # On macOS/Linux
 uv sync
 
 # Or manually install dependencies
-# uv pip install fastapi uvicorn[standard] redis python-dotenv ...
+# uv pip install fastapi uvicorn[standard] python-dotenv ...
 ```
 
 ## Run

@@ -1,0 +1,7 @@
+FROM public.ecr.aws/lambda/python:3.13
+
+RUN pip install --no-cache-dir jinja2
+COPY lambda_handler.py labs.py credentials.py emailer.py github.py verify_client.py wordpress.py ${LAMBDA_TASK_ROOT}/
+COPY templates/ ${LAMBDA_TASK_ROOT}/templates/
+
+CMD ["lambda_handler.handler"]

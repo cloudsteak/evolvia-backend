@@ -1,0 +1,246 @@
+resource "aws_iam_role" "this" {
+  for_each = local.functions
+
+  name = "${local.prefix}-lambda-${each.key}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "lambda.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "logs" {
+  for_each = local.functions
+
+  name = "${aws_iam_role.this[each.key].name}-logs"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "${aws_cloudwatch_log_group.this[each.key].arn}:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "dynamodb" {
+  for_each = { for k, v in local.functions : k => v if v.dynamodb }
+
+  name = "${aws_iam_role.this[each.key].name}-dynamodb"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+        ]
+        Resource = [data.terraform_remote_state.dynamodb.outputs.labs_table_arn]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ses" {
+  for_each = { for k, v in local.functions : k => v if v.ses }
+
+  name = "${aws_iam_role.this[each.key].name}-ses"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+        ]
+        Resource = [data.terraform_remote_state.ses.outputs.mail_identity_arn]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "portal" {
+  for_each = { for k, v in local.functions : k => v if v.ses }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-portal"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_portal}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ssm" {
+  for_each = { for k, v in local.functions : k => v if v.ssm }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_api_keys}",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_api_keys}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "github_token" {
+  for_each = { for k, v in local.functions : k => v if v.github }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-github"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_github}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "verify" {
+  for_each = { for k, v in local.functions : k => v if v.verify }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-verify"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/${local.env}/${local.prefix}/verify/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "wordpress" {
+  for_each = { for k, v in local.functions : k => v if v.wordpress }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-wordpress"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_wordpress}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "invoke_backend" {
+  for_each = { for k, v in local.functions : k => v if v.invoke_backend }
+
+  name = "${aws_iam_role.this[each.key].name}-invoke-backend"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["lambda:InvokeFunction"]
+        Resource = [
+          aws_lambda_function.this["backend"].arn,
+          "${aws_lambda_function.this["backend"].arn}:*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "github_lambda" {
+  name = local.github_lambda_policy_name
+  role = local.github_backend_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration",
+          "lambda:UpdateFunctionCode",
+          "lambda:PublishVersion",
+          "lambda:GetAlias",
+          "lambda:UpdateAlias",
+        ]
+        Resource = flatten([
+          for fn in aws_lambda_function.this : [fn.arn, "${fn.arn}:*"]
+        ])
+      }
+    ]
+  })
+}
