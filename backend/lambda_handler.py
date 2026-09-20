@@ -7,6 +7,8 @@ from credentials import generate_credentials
 from emailer import send_lab_ready_email
 from github import dispatch
 from labs import delete_lab, get_lab, put_lab, scan_labs
+from verify_client import VerifyError, verify_lab
+from wordpress import notify as notify_wordpress
 
 _level = getattr(logging, (os.getenv("LOG_LEVEL") or "INFO").upper(), logging.INFO)
 logging.basicConfig(level=_level)
@@ -86,6 +88,7 @@ def _lab_ready(payload):
         lab["status"] = status_value
         lab["error_at"] = now
         put_lab(lab)
+        notify_wordpress(lab, status_value)
         return _json(200, {"message": f"Lab {username} reported status: {status_value}"})
 
     try:
@@ -103,7 +106,27 @@ def _lab_ready(payload):
     lab["status"] = "ready"
     lab["started_at"] = now
     put_lab(lab)
+    notify_wordpress(lab, "ready")
     return _json(200, {"message": f"Lab {username} marked as ready"})
+
+
+def _verify_lab(payload):
+    user = (payload.get("user") or "").strip()
+    email = (payload.get("email") or "").strip()
+    cloud = (payload.get("cloud") or "").strip()
+    lab = (payload.get("lab") or "").strip()
+    if not all((user, email, cloud, lab)):
+        return _json(400, {"message": "Invalid verify-lab request."})
+    try:
+        return _json(200, verify_lab(user=user, email=email, cloud=cloud, lab=lab))
+    except ValueError:
+        logging.warning("Invalid verify-lab request: cloud=%s lab=%s", cloud, lab)
+        return _json(400, {"message": "Invalid verify-lab request."})
+    except VerifyError as err:
+        return _json(err.status, {"message": err.message})
+    except Exception:
+        logging.exception("Unexpected error while processing verify-lab request.")
+        return _json(500, {"message": "Unexpected server error."})
 
 
 def _clean_up_lab(payload):
@@ -151,7 +174,7 @@ def _dispatch(event, route):
         return _clean_up_lab(_body(event))
 
     if route.endswith("/verify-lab"):
-        return _json(501, {"message": "Not implemented"})
+        return _verify_lab(_body(event))
 
     return _json(404, {"message": "Not Found"})
 
