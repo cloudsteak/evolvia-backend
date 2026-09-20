@@ -4,8 +4,8 @@ Függvényhéjak a `local.functions` mapben (`backend`, `cleanup`, `authorizer`)
 
 Image: `{ecr_url}:{local.image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja.
 
-1. PR: kód → `ecr-backend.yml` build + push ECR (`{verzió}` + `latest`).
-2. PR: te beírod a **verziótaget** ide → CI `tofu apply` (Lambda ezt húzza).
+1. PR: kód → CI ECR push (`{verzió}` + `latest`).
+2. PR: te beírod a **verziótaget** ide → CI `tofu apply` (Lambda ezt húzza). Egy PR is lehet: merge-ön előbb image, aztán apply.
 
 Apply csak ha a tagelt image már bent van. Az első 52 előtt le kell futnia az ECR pushnak.
 
