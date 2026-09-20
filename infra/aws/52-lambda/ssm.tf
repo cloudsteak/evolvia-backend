@@ -10,6 +10,18 @@ resource "aws_ssm_parameter" "api_keys" {
   }
 }
 
+resource "aws_ssm_parameter" "config" {
+  for_each = local.config_parameters
+
+  name  = each.value
+  type  = "String"
+  value = "replace-me"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "aws_ssm_parameter" "github_token" {
   name  = local.github_token_path
   type  = "SecureString"

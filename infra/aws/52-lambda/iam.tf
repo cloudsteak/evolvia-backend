@@ -82,6 +82,29 @@ resource "aws_iam_role_policy" "ses" {
   })
 }
 
+resource "aws_iam_role_policy" "portal" {
+  for_each = { for k, v in local.functions : k => v if v.ses }
+
+  name = "${aws_iam_role.this[each.key].name}-ssm-portal"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.portal_path}/*",
+        ]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "ssm" {
   for_each = { for k, v in local.functions : k => v if v.ssm }
 
@@ -123,7 +146,28 @@ resource "aws_iam_role_policy" "github_token" {
           "ssm:GetParameters",
         ]
         Resource = [
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.github_token_path}",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter${local.github_path}/*",
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "invoke_backend" {
+  for_each = { for k, v in local.functions : k => v if v.invoke_backend }
+
+  name = "${aws_iam_role.this[each.key].name}-invoke-backend"
+  role = aws_iam_role.this[each.key].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["lambda:InvokeFunction"]
+        Resource = [
+          aws_lambda_function.this["backend"].arn,
+          "${aws_lambda_function.this["backend"].arn}:*",
         ]
       }
     ]

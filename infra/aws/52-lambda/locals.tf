@@ -5,40 +5,53 @@ locals {
   ecr           = data.terraform_remote_state.ecr.outputs.repositories
   api_keys_path            = "/${local.env}/${local.prefix}/api-keys"
   api_key_names            = toset(["wordpress", "github", "internal"])
-  github_token_path        = "/${local.env}/${local.prefix}/github/token"
-  github_repo              = "cloudsteak/evolvia-labs"
-  github_workflow_filename = "-lab.yml"
+  github_path               = "/${local.env}/${local.prefix}/github"
+  github_token_path         = "${local.github_path}/token"
+  github_repo_path          = "${local.github_path}/repo"
+  github_workflow_filename  = "-lab.yml"
+  portal_path               = "/${local.env}/${local.prefix}/portal"
+  portal_azure_url_path     = "${local.portal_path}/azure"
+  portal_aws_url_path       = "${local.portal_path}/aws"
+
+  config_parameters = {
+    github_repo  = local.github_repo_path
+    portal_azure = local.portal_azure_url_path
+    portal_aws   = local.portal_aws_url_path
+  }
 
   functions = {
     backend = {
       name      = "${local.prefix}-backend"
-      image_tag = "1.0.4"
+      image_tag = "1.0.6"
       timeout   = 30
-      log_level = "INFO"
+      log_level = "DEBUG"
       ses       = true
       dynamodb  = true
-      ssm       = false
-      github    = false
+      ssm            = false
+      github         = true
+      invoke_backend = false
     }
     cleanup = {
-      name      = "${local.prefix}-cleanup"
-      image_tag = "1.0.1"
-      timeout   = 60
-      log_level = "INFO"
-      ses       = false
-      dynamodb  = true
-      ssm       = false
-      github    = true
+      name           = "${local.prefix}-cleanup"
+      image_tag      = "1.0.3"
+      timeout        = 60
+      log_level      = "DEBUG"
+      ses            = false
+      dynamodb       = false
+      ssm            = false
+      github         = false
+      invoke_backend = true
     }
     authorizer = {
       name      = "${local.prefix}-authorizer"
-      image_tag = "1.0.0"
+      image_tag = "1.0.1"
       timeout   = 10
-      log_level = "INFO"
+      log_level = "DEBUG"
       ses       = false
       dynamodb  = false
       ssm       = true
       github    = false
+      invoke_backend = false
     }
   }
 

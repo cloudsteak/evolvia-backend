@@ -30,15 +30,21 @@ resource "aws_lambda_function" "this" {
         LABS_TABLE_NAME = data.terraform_remote_state.dynamodb.outputs.labs_table_name
       } : {},
       each.value.ses ? {
-        SES_FROM_ADDRESS = data.terraform_remote_state.ses.outputs.from_address
+        SES_FROM_ADDRESS       = data.terraform_remote_state.ses.outputs.from_address
+        PORTAL_AZURE_URL_PATH  = local.portal_azure_url_path
+        PORTAL_AWS_URL_PATH    = local.portal_aws_url_path
       } : {},
       each.value.ssm ? {
         API_KEYS_PATH = local.api_keys_path
       } : {},
       each.value.github ? {
-        GITHUB_REPO               = local.github_repo
-        GITHUB_WORKFLOW_FILENAME  = local.github_workflow_filename
-        GITHUB_TOKEN_PATH         = local.github_token_path
+        GITHUB_REPO_PATH         = local.github_repo_path
+        GITHUB_WORKFLOW_FILENAME = local.github_workflow_filename
+        GITHUB_TOKEN_PATH        = local.github_token_path
+      } : {},
+      each.value.invoke_backend ? {
+        BACKEND_FUNCTION_NAME = local.functions.backend.name
+        BACKEND_ALIAS         = local.alias_name
       } : {},
     )
   }
