@@ -6,7 +6,7 @@ PR: csak a változott mappa. Merge (`main`): image push, aztán a változott tof
 |----------|----|-------|
 | `backend/` | ruff, version bump (`pyproject.toml`), docker build, pytest ha van | ECR `{verzió}` + `latest` |
 | `cleanup-trigger/` | ugyanaz | ECR `{verzió}` + `latest` |
-| `authorizer/` | ruff, docker build (nincs pyproject; tag a 52 `image_tag`) | ECR, tag a 52 `locals` |
+| `authorizer/` | ruff, version bump (`pyproject.toml`), docker build | ECR `{verzió}` + `latest` |
 | `infra/aws/<layer>/` | `tofu fmt` + `validate` + `plan` a **változott** layereken, sorrend a sorszám | `tofu apply` ugyanazokon |
 | más (`docs/`, …) | semmi | semmi |
 
@@ -18,7 +18,7 @@ OIDC secret: `AWS_GITHUB_ROLE_ARN`. A 12-es role `main` + `pull_request`. **Elő
 
 A K8s GHCR workflow-k (`docker-build-lab-*.yml`) még mennek `main`-re, amíg a 9. kivezetés.
 
-Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart). Pinelt semver, nem `latest` a Lambdán.
+Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart), `linux/amd64` és `linux/arm64`. Pinelt semver, nem `latest` a Lambdán. A 52 `image_tag` és az `architectures` külön PR.
 
 ## Következő
 

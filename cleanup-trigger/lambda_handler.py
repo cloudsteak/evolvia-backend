@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import boto3
 
@@ -28,14 +28,14 @@ def is_expired(lab):
         return False
 
     try:
-        timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+        timestamp = datetime.fromisoformat(timestamp_str)
         if timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
+            timestamp = timestamp.replace(tzinfo=UTC)
     except (TypeError, ValueError) as e:
         logger.error("Invalid timestamp for %s: %s - %s", lab.get("username"), timestamp_str, e)
         return False
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if status == "ready":
         expiry_time = timestamp + timedelta(seconds=ttl_seconds)

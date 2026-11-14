@@ -1,0 +1,6 @@
+[project]
+name = "evolvia-authorizer"
+version = "1.1.0"
+description = "Evolvia API authorizer. Python 3.13 required."
+authors = [{name = "CloudSteak"}]
+requires-python = ">=3.13"

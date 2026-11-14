@@ -81,7 +81,7 @@ runs:
           images_items+=('{"context":"cleanup-trigger","file":"cleanup-trigger/Dockerfile.lambda","repository":"evolvia-cleanup","version_file":"cleanup-trigger/pyproject.toml","function_key":"cleanup"}')
         fi
         if [ "$authorizer" = true ]; then
-          images_items+=('{"context":"authorizer","file":"authorizer/Dockerfile.lambda","repository":"evolvia-authorizer","version_file":"","function_key":"authorizer"}')
+          images_items+=('{"context":"authorizer","file":"authorizer/Dockerfile.lambda","repository":"evolvia-authorizer","version_file":"authorizer/pyproject.toml","function_key":"authorizer"}')
         fi
         if [ ${#images_items[@]} -eq 0 ]; then
           images_json='[]'
