@@ -2,7 +2,7 @@
 
 Függvényhéjak a `local.functions` mapben (`backend`, `cleanup`, `authorizer`). OCI image + SnapStart, alias `live`. Minden Lambda itt van.
 
-Image: `{ecr_url}:{local.image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja.
+Image: `{ecr_url}:{local.image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja. A tag `linux/amd64` és `linux/arm64`.
 
 1. PR: kód → CI ECR push (`{verzió}` + `latest`).
 2. PR: te beírod a **verziótaget** ide → CI `tofu apply` (Lambda ezt húzza). Egy PR is lehet: merge-ön előbb image, aztán apply.
