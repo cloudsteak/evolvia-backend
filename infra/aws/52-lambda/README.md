@@ -2,10 +2,10 @@
 
 Függvényhéjak a `local.functions` mapben (`backend`, `cleanup`, `authorizer`). OCI image + SnapStart, alias `live`. Minden Lambda itt van.
 
-Image: `{ecr_url}:{local.image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja. A tag `linux/amd64` és `linux/arm64`.
+Image: `{ecr_url}:{image_tag}` — pinelt semver, **nem** `latest`. A CI a `latest`-et is rárakja az utolsó image-re; a Lambda azt nem használja. A tag `linux/amd64` és `linux/arm64`. A futó architektúra függvényenként: `functions.*.architecture` (`arm64` vagy `x86_64`).
 
 1. PR: kód → CI ECR push (`{verzió}` + `latest`).
-2. PR: te beírod a **verziótaget** ide → CI `tofu apply` (Lambda ezt húzza). Egy PR is lehet: merge-ön előbb image, aztán apply.
+2. PR: te beírod a **verziótaget** és az **architektúrát** ide → CI `tofu apply` (Lambda ezt húzza). Egy PR is lehet: merge-ön előbb image, aztán apply.
 
 Apply csak ha a tagelt image már bent van. Az első 52 előtt le kell futnia az ECR pushnak.
 
@@ -15,7 +15,7 @@ A CI a taget nem írja. Apply csak ha a tagelt image már bent van.
 
 A mai `backend/Dockerfile` (`python:3.13-slim`) custom — a CI image `FROM public.ecr.aws/lambda/python:3.13` (vagy SnapStart label) legyen, különben a SnapStart publish elhasal.
 
-Olvas: 12, 21, 34, 50. Nincs Route53. Image: `50.repositories[<ugyanaz a kulcs>].url` + `image_tag`. Cleanup: `evolvia-cleanup:1.0.0`, nem a backend image.
+Olvas: 12, 21, 34, 50. Nincs Route53. Image: `50.repositories[<ugyanaz a kulcs>].url` + `image_tag`. A cleanup a saját repója és a saját `image_tag`-je, nem a backend image.
 
 ## State
 
@@ -28,7 +28,7 @@ Olvas: 12, 21, 34, 50. Nincs Route53. Image: `50.repositories[<ugyanaz a kulcs>]
 
 ## Apply (első ECR push után)
 
-Előfeltétel: [első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push). `local.image_tag` egyezzen a feltolt verzióval.
+Előfeltétel: [első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push). `functions.*.image_tag` egyezzen a feltolt verzióval. `architecture` a választott platform.
 
 ```bash
 cd infra/aws/52-lambda
@@ -40,7 +40,7 @@ A `create` SnapStart snapshot miatt eltarthat.
 
 ## Név
 
-- `local.functions` — `name`, `image_tag`, `timeout`, `ses`, `dynamodb`, `ssm`
+- `local.functions` — `name`, `image_tag`, `architecture` (`arm64` vagy `x86_64`, függvényenként), `timeout`, `ses`, `dynamodb`, `ssm`
 - Parameter Store pathok localsben; az érték CLI `put-parameter`, a tofu nem kezeli a paramétert. Workflow suffix: `local.github_workflow_filename`.
 - role: `{prefix}-lambda-{key}`
 - policies: `{role}-{capability}`; GitHub: `{github-role}-lambda`
