@@ -1,4 +1,4 @@
-# Student Lab Backend
+# EVOLVIA-BACKEND
 
 FastAPI alapú backend automatikus Azure lab környezetek létrehozásához, email értesítéssel, Auth0 hitelesítéssel, Redis-alapú TTL kezelés.
 
