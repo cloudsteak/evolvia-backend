@@ -61,6 +61,7 @@ jobs:
     with:
       path: authorizer
       dockerfile: authorizer/Dockerfile.lambda
+      version-file: authorizer/pyproject.toml
       base-sha: ${{ github.event.pull_request.base.sha }}
 
   tofu:
