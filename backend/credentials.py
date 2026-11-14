@@ -1,11 +1,11 @@
 import random
+import secrets
 import string
 
 
 def generate_credentials():
-    username = "tanulo-" + "".join(
-        random.choices(string.ascii_lowercase + string.digits, k=6)
-    )
+    alphabet = string.ascii_lowercase + string.digits
+    username = "tanulo-" + "".join(secrets.choice(alphabet) for _ in range(6))
 
     uppercase = string.ascii_uppercase
     lowercase = string.ascii_lowercase
