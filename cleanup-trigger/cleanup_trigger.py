@@ -4,7 +4,7 @@
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -35,12 +35,12 @@ def is_expired(lab):
         return False
 
     try:
-        timestamp = datetime.fromisoformat(timestamp_str).replace(tzinfo=timezone.utc)
+        timestamp = datetime.fromisoformat(timestamp_str).replace(tzinfo=UTC)
     except (TypeError, ValueError) as e:
         logger.error(f"Invalid timestamp for {lab.get('username')}: {timestamp_str} - {e}")
         return False
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if status == "ready":
         expiry_time = timestamp + timedelta(seconds=ttl_seconds)
