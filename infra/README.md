@@ -1,6 +1,6 @@
 # Infra
 
-OpenTofu az izolált platform accountban. Alkalmazáskód: `backend/`, `cleanup-trigger/` — a CI buildeli, nem a tofu.
+OpenTofu az izolált platform accountban. Alkalmazáskód: `backend/`, `cleanup-trigger/`, `authorizer/` — a CI buildeli, nem a tofu.
 
 Átállás: [docs/atallas.md](../docs/atallas.md). **Layer terv:** [docs/layers.md](../docs/layers.md).
 

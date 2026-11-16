@@ -1,6 +1,6 @@
 # EVOLVIA-BACKEND
 
-FastAPI alapú backend lab környezetek (Azure, AWS, GCP) indításához. A lab állapot DynamoDB-ben van, a kész labról SES küld emailt. A HTTP API Lambda mögött fut; a védett route-ok `X-API-Key` headert várnak (Lambda authorizer, kulcsok SSM-ben). `GET /health` nyitva.
+Lab környezetek (Azure, AWS, GCP) indítása. A lab állapot DynamoDB-ben van, a kész labról SES küld emailt. A HTTP API Lambda mögött fut. A védett route-ok `X-API-Key` headert várnak. `GET /health` nyitva.
 
 Átállás: [docs/atallas.md](docs/atallas.md). Layer terv: [docs/layers.md](docs/layers.md).
 
@@ -8,7 +8,9 @@ FastAPI alapú backend lab környezetek (Azure, AWS, GCP) indításához. A lab 
 
 - [backend/](backend/README.md) — API (lab indítás, státusz, verify, email)
 - [cleanup-trigger/](cleanup-trigger/README.md) — lejárt labok törlése
-- `authorizer/` — `X-API-Key` ellenőrzés SSM-ből
+- [authorizer/](authorizer/README.md) — `X-API-Key` ellenőrzés SSM-ből
+
+A kiadott image mindháromnál a `Dockerfile.lambda`. A `backend/Dockerfile` és a `cleanup-trigger/Dockerfile` a korábbi konténer.
 
 ## Infra
 
@@ -36,12 +38,3 @@ Host: `https://backend.api.evolvia.hu`. A `/health` kivételével minden route `
 - `GET /lab-status/all`
 - `POST /clean-up-lab`
 - `POST /lab-delete-internal`
-
-## Helyi futás
-
-A szolgáltatás README-je: [backend/README.md](backend/README.md).
-
-```bash
-docker build -t evolvia-backend ./backend
-docker run -p 8000:8000 --env-file .env evolvia-backend
-```

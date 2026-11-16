@@ -1,28 +1,23 @@
-# Clean up trigger for Evolvia
+# Cleanup
 
-## Pre-requisites
+Lambda. Belépés: `lambda_handler.handler`. Image: `Dockerfile.lambda`. Ütemezés: [55-scheduler](../infra/aws/55-scheduler/README.md), `rate(30 minutes)`, a `cleanup:live` alias.
 
-Python 3.13
+A `cleanup_trigger.py` és a `Dockerfile` a korábbi konténer (HTTP, `X-Internal-Secret`). A Lambda image nem másolja be.
 
-## Setup
+A scheduler a backend Lambdát invoke-olja (`BACKEND_FUNCTION_NAME` + `BACKEND_ALIAS`), nem a HTTP API-t. Authorizer nincs a híváson.
 
-### Create virtual environment with uv
+1. `GET /lab-status/all`
+2. Lejárt lab: `POST /clean-up-lab` (GitHub destroy)
+3. Sikeres destroy után: `POST /lab-delete-internal`
 
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
+A GitHub hiba esetén a DynamoDB sor megmarad.
 
-# Create Python 3.13 virtual environment
-uv venv --python 3.13
+Lejárat a státusz időbélyegétől:
 
-# Activate the virtual environment
-source .venv/bin/activate  # On macOS/Linux
-# or
-.venv\Scripts\activate  # On Windows
+| Státusz | Idő |
+|---------|-----|
+| `ready` | `lab_ttl`, alap 5400 s (`started_at`) |
+| `pending` | 7200 s (`created_at`, ha nincs `error_at`) |
+| `failed` és minden más | 14400 s |
 
-# Install dependencies from pyproject.toml
-uv pip install httpx
-
-# Or sync all dependencies including lock file generation
-uv sync
-```
+Env: `LOG_LEVEL`, `BACKEND_FUNCTION_NAME`, `BACKEND_ALIAS`. A függvény a [52-lambda](../infra/aws/52-lambda/README.md).

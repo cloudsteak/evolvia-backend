@@ -1,8 +1,8 @@
 # 21-ses
 
-Átállás **2e**. Apply kész. Identity pending, DNS a 22-esben.
+Átállás **2e**. Apply kész. A DNS rekordok a 22-ben vannak, az identity verified.
 
-Az apply **visszatér** pendingnél. A [22-dns](../22-dns/README.md) írja a rekordokat és megvárja a verified státuszt. 21 után 22, utána nincs vissza a 22-re.
+Az első apply pending identitynél visszatér. A [22-dns](../22-dns/README.md) írja a rekordokat és megvárja a verified státuszt. Most verified. 21 után 22, utána a 22-re nincs visszalépés.
 
 Bejövő mail: az **apex `evolvia.hu` MX marad cPanel** (`0 evolvia.hu`). SES MX/SPF csak `bounce.evolvia.hu`.
 
@@ -17,7 +17,7 @@ Nem ide: Route53, SQS, Lambda IAM.
 | Region | `eu-north-1` |
 | Profile | `prod` |
 
-Előfeltétel a tiszta sorrendben: `20-certificates`. Most: 20 és 22 ACM már kész, a 21 kimaradt.
+Előfeltétel: `20-certificates`. Apply kész. A Route53 rekord a 22-ben van.
 
 ## Apply
 
@@ -27,7 +27,7 @@ tofu init
 tofu apply
 ```
 
-Utána **egyszer** `22-dns` apply (SES DNS). Utána 22 tilos.
+Új SES DNS érték után egyszer `22-dns` apply. Utána a 22-re nincs visszalépés.
 
 ## Outputs
 

@@ -1,55 +1,48 @@
-# Evolvia Lab management backend service. 
+# Evolvia lab backend
 
+Lambda. Belépés: `lambda_handler.handler`. A kiadott image a `Dockerfile.lambda` (`public.ecr.aws/lambda/python:3.13`, `linux/arm64`).
 
-## Pre-requisites
+A `main.py` és a `Dockerfile` a korábbi konténer. A Lambda image nem másolja be.
 
-Python 3.13
+## Végpontok
 
-## Setup
+A HTTP API a [60-backend](../infra/aws/60-backend/README.md). A `/health` nyitva. A többi route `X-API-Key` ([authorizer](../authorizer/README.md)).
 
-### Create virtual environment with uv
+- `GET /` , `GET /health`
+- `POST /start-lab` — DynamoDB item + GitHub Actions apply
+- `POST /lab-ready` — SES levél, WordPress webhook
+- `POST /verify-lab` — Azure, AWS vagy GCP verify szolgáltatás
+- `GET /lab-status/all`
+- `POST /clean-up-lab` — GitHub Actions destroy
+- `POST /lab-delete-internal` — DynamoDB sor törlése
 
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
+A lab állapot a `evolvia-platform-labs` táblában van, PK `username`. Lejárat: a [cleanup](../cleanup-trigger/README.md).
 
-# Create Python 3.13 virtual environment
-uv venv --python 3.13
+## Konfig
 
-# Activate the virtual environment
-source .venv/bin/activate  # On macOS/Linux
-# or
-.venv\Scripts\activate  # On Windows
+A 52 env-je pathot ad, az értéket a Parameter Store tartja. Tofu a paramétert nem kezeli.
 
-# Sync dependencies (includes lock file generation)
-uv sync
+| Env | Szerep |
+|-----|--------|
+| `LOG_LEVEL` | alap `INFO` |
+| `LABS_TABLE_NAME` | DynamoDB tábla |
+| `SES_FROM_ADDRESS` | `noreply@evolvia.hu` |
+| `SSM_PORTAL_AZURE_URL`, `SSM_PORTAL_AWS_URL` | konzol link a levélben |
+| `SSM_GITHUB_REPO`, `SSM_GITHUB_TOKEN`, `GITHUB_WORKFLOW_FILENAME` | workflow dispatch. A suffix `-lab-manager.yaml` |
+| `SSM_VERIFY_{AZURE,AWS,GCP}_{URL,KEY}` | verify hívás, header `X-API-Key` |
+| `SSM_WORDPRESS_WEBHOOK_URL`, `SSM_WORDPRESS_WEBHOOK_TOKEN` | lab státusz webhook |
 
-# Or manually install dependencies
-# uv pip install fastapi uvicorn[standard] python-dotenv ...
-```
+A feladó `Cloud Mentor <noreply@evolvia.hu>`. Azure labnál a felhasználónév `{username}@evolvia.hu`. Sablon: `templates/lab_ready_default.html`.
 
-## Run
+Az értékek felvétele: [02-infra-tofu](../docs/steps/02-infra-tofu.md#cleanup-3e).
 
-```bash
-uvicorn main:app --reload
-```
-
-## Verify Service Configuration
-
-The backend routes `/verify-lab` calls to provider-specific verify microservices based on the `cloud` value (`azure`, `aws`, `gcp`).
-
-Required environment variables:
+## Image
 
 ```bash
-VERIFY_LAB_AZURE_HOST
-VERIFY_LAB_AZURE_PATH
-INTERNAL_VERIFY_AZURE_API_KEY
-
-VERIFY_LAB_AWS_HOST
-VERIFY_LAB_AWS_PATH
-INTERNAL_VERIFY_AWS_API_KEY
-
-VERIFY_LAB_GCP_HOST
-VERIFY_LAB_GCP_PATH
-INTERNAL_VERIFY_GCP_API_KEY
+docker buildx build --platform linux/arm64 \
+  --provenance=false --sbom=false \
+  -f backend/Dockerfile.lambda \
+  backend
 ```
+
+A futó tag a [52-lambda](../infra/aws/52-lambda/README.md) `functions.backend.image_tag`. A CI a `latest`-et is rárakja, a Lambda a pinelt taget húzza.

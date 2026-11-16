@@ -1,16 +1,14 @@
-# 6. Próba a next hoston
+# 6. Próba
 
-Még nincs implementálva.
-
-Host: `backend-next.api.evolvia.hu`. A régi prod (`evolvia.api.cloud-mentor.hu`) még K8s. A WordPress prod plugint itt ne cseréld.
+Host: `https://backend.api.evolvia.hu`. Külön next hostname nincs a tofu-ban. A WordPress `backend_url` cseréje a 8. lépés.
 
 ## Ellenőrzés
 
 - Authorizer: rossz kulcs 401, jó kulcs 200 a `GET /`-re
 - `start-lab`: DynamoDB item + GitHub apply
-- `lab-ready`: SES levél, ugyanaz a HTML
-- `verify-lab`: proxy; API Gateway ~29s limit mérése
-- Cleanup: manuális invoke
+- `lab-ready`: SES levél, feladó `Cloud Mentor <noreply@evolvia.hu>`
+- `verify-lab`: proxy. A backend Lambda timeout 60 s; az API Gateway integrációs limitje ~29 s
+- Cleanup: a `cleanup:live` invoke, vagy megvárni a 30 perces schedulert
 
 ## Következő
 

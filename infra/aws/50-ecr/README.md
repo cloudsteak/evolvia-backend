@@ -2,7 +2,7 @@
 
 Apply kész. `local.repositories`: `backend`, `cleanup`, `authorizer`. Új repo: **újra apply**, aztán image push, aztán 52.
 
-Lifecycle mindkettőn: `latest` + 5× `*.*` + untagged 180 nap. GitHub policy mindkét repo ARN-jére.
+Lifecycle mindhárom repón: `latest` + 5× `*.*` + untagged 30 nap. A GitHub policy mindhárom repo ARN-jére megy.
 
 ## State
 
@@ -32,8 +32,8 @@ tofu apply
 
 ## Első push
 
-[02-infra-tofu — első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push) — backend, cleanup, authorizer külön. Authorizer catch-up: [ugyanott](../../../docs/steps/02-infra-tofu.md#authorizer-catch-up-3c-előre).
+[02-infra-tofu — első ECR push](../../../docs/steps/02-infra-tofu.md#első-ecr-push) — backend és cleanup. Authorizer image és API-kulcs: [API-kulcsok](../../../docs/steps/02-infra-tofu.md#api-kulcsok).
 
 ## Következő
 
-Cleanup image push, aztán `52-lambda`.
+`52-lambda`. Apply kész. Az image tag a 52 `functions.*.image_tag`.

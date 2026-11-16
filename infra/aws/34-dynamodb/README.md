@@ -15,7 +15,7 @@ Olvas: 12 (prefix). A 52-es Lambda olvassa a tábla nevét / ARN-t.
 | Region | `eu-north-1` |
 | Profile | `prod` |
 
-Előfeltétel: apply-olt `12-oidc` és `22-dns`. A 30–33 SQL nincs, kihagyható.
+Sorrendben a 22 után. Olvas: 12. A 30–33 SQL nincs, kihagyható.
 
 ## Apply
 
@@ -32,4 +32,4 @@ tofu apply
 
 ## Következő layer
 
-`infra/aws/21-ses` (a 22 előtt; a 34 után a tiszta sorrendben a 50 jön).
+`infra/aws/50-ecr`

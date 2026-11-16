@@ -20,7 +20,7 @@ A foundation számozása (`10-fundamentals`, `40-s3-lifecycle`, `50-verify`) má
 | `30–39` | data | tartós store: **30–33 SQL**, **34–36 nosql**, **37 Redis**, **38–39 egyéb** | |
 | `40–49` | messaging | SQS / SNS / bus | SES identity (az a 21, mert DNS kell a 22 elé), Scheduler |
 | `50–59` | compute | ECR, Lambda, Scheduler | API Gateway |
-| `60–69` | apps | HTTP API, authorizer, custom domain | ECR, DDB, SES, Lambda héj, Route53 |
+| `60–69` | apps | HTTP API, authorizer bind | ECR, DDB, SES, Lambda héj, Route53, custom domain |
 
 A `backend.api.evolvia.hu` custom domain + Route53 alias a **22**-ben van (hogy legyen mire alias). A 60 csak bind: `api_mapping`.
 
@@ -34,12 +34,12 @@ A kód CI-vel megy az ECR-be, majd a Lambdára. Tofu nem buildel Python-t.
 | `12-oidc` | identity | GitHub OIDC + role | — | apply kész |
 | `20-certificates` | network | ACM request, apply **visszatér** `PENDING_VALIDATION`-nél | — | apply kész |
 | `21-ses` | network | SES identity + DKIM token + MAIL FROM. **Nincs Route53.** Apply visszatér pendingnél | — | apply kész |
-| `22-dns` | network | **minden** Route53 + API GW custom domain + alias + ACM/SES waiter | 20, 21 | apply kész; alias catch-up (önálló, nem olvas 60-at) |
+| `22-dns` | network | **minden** Route53 + API GW custom domain + alias + ACM/SES waiter | 20, 21 | apply kész |
 | `34-dynamodb` | data / nosql | lab tábla | 12 | apply kész |
-| `50-ecr` | compute | ECR map: backend + cleanup + authorizer | 12 | apply kész; authorizer repo catch-up |
-| `52-lambda` | compute | minden Lambda (`functions` map: image tag és architektúra), SnapStart, alias `live`, SSM API kulcsok | 12, 21, 34, 50 | apply kész; authorizer catch-up |
-| `55-scheduler` | compute | EventBridge Scheduler → cleanup `live`, group `{prefix}`, `rate(30 minutes)` | 12, 52 | apply kész; group catch-up **60 előtt** |
-| `60-backend` | apps | HTTP API + bind + Lambda authorizer (`X-API-Key`), CORS, stage `live`. `/health` nyitva. Nincs Route53, nincs domain resource | 12, 22, 52 | apply kész; authorizer bind catch-up |
+| `50-ecr` | compute | ECR map: backend + cleanup + authorizer | 12 | apply kész |
+| `52-lambda` | compute | minden Lambda (`functions` map: image tag és architektúra), SnapStart, alias `live`, SSM API kulcsok | 12, 21, 34, 50 | apply kész |
+| `55-scheduler` | compute | EventBridge Scheduler → cleanup `live`, group `{prefix}`, `rate(30 minutes)` | 12, 52 | apply kész |
+| `60-backend` | apps | HTTP API + bind + Lambda authorizer (`X-API-Key`), CORS, stage `live`. `/health` nyitva. Nincs Route53, nincs domain resource | 12, 22, 52 | apply kész |
 
 Később, ha kell: `30–33` SQL, `35–36` nosql, `37` Redis, `38–39` egyéb, `24-vpc`, `18-kms`, `40-sqs`. Üres mappa nincs előre.
 
@@ -55,7 +55,7 @@ State key a concern neve (`aws/ses/state.tfstate`), nem a sorszám.
 | IAM role | `{prefix}-{actor}-{subject}` | `evolvia-github-evolvia-backend` |
 | IAM policy | `{role}-{capability}` | `evolvia-github-evolvia-backend-ecr`; 52: `…-lambda` |
 
-A név a layer `locals`-ában egyszer. DNS hostname nem ez a minta (`lab-api.evolvia.hu`).
+A név a layer `locals`-ában egyszer. A DNS hostname külön minta (`backend.api.evolvia.hu`).
 
 ## Apply sorrend
 
@@ -63,9 +63,7 @@ A név a layer `locals`-ában egyszer. DNS hostname nem ez a minta (`lab-api.evo
 00 → 12 → 20-certificates → 21-ses → 22-dns → 34-dynamodb → 50-ecr → első image push → 52-lambda → 55-scheduler → 60-backend
 ```
 
-Az első image (laptop, 50 után, 52 előtt): [02-infra-tofu](./steps/02-infra-tofu.md#első-ecr-push). Később ugyanez a CI.
-
-A 22 és a 34 már lefutott, a 21 kimaradt. Catch-up: **21-ses apply, aztán 22-dns egyszer** (SES rekordok). Utána nincs vissza a 22-re. A 34-et nem kell újra.
+Az első image (laptop, 50 után, 52 előtt): [02-infra-tofu](./steps/02-infra-tofu.md#első-ecr-push). Később ugyanez a CI. A futó tag a 52 `functions.*.image_tag`.
 
 ## CI vs tofu
 

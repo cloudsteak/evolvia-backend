@@ -1,17 +1,17 @@
 # 7. DNS átállás
 
-Még nincs implementálva. Új prod host: `backend.api.evolvia.hu` (hosted zone ebben az accountban). A régi `evolvia.api.cloud-mentor.hu` K8s-en marad, amíg a WordPress `backend_url` át nem vált.
+Az új host a [22-dns](../../infra/aws/22-dns/README.md)-ben apply kész: `backend.api.evolvia.hu`. Custom domain és A/AAAA alias a 22-ben. A [60-backend](../../infra/aws/60-backend/README.md) csak bind (`api_mapping`).
+
+A régi `evolvia.api.cloud-mentor.hu` a hívók átállásáig marad. A hívóváltás az 5. (GitHub) és a 8. (WordPress).
 
 | # | Mikor | Akció |
 |---|--------|--------|
-| 7a | 20-certificates + 22-dns apply | ACM validáció: `22-dns`. API alias: `60-backend` (zone a 22-ből). |
-| 7b | −1 óra | Új lab tiltása. Drain vagy Redis → DynamoDB import. |
-| 7c | flip | Nem a régi hostot vágjuk. A 5. lépés (GitHub) az új URL-re + X-API-Key. |
-| 7d | +30 perc | Smoke a `backend.api.evolvia.hu`-n. `start-lab` a 8. után. |
+| 7a | kész | ACM és alias: 22. Bind: 60. |
+| 7b | flip előtt | Új lab a régi hoston ne induljon. A lab állapot DynamoDB. |
+| 7c | flip | Az 5. lépés az új URL + `X-API-Key`. |
+| 7d | flip után | Smoke a `backend.api.evolvia.hu`-n. `start-lab` a 8. után. |
 
-A 8. lépés: WordPress `backend_url` + API kulcs. A régi `evolvia.api.cloud-mentor.hu` K8s-en marad rollbacknek, amíg a 9. ki nem vezeti.
-
-Rollback: plugin `backend_url` vissza a régi hostra.
+Rollback: a hívó URL-je vissza a régi hostra. A 22 aliasát nem bontjuk.
 
 ## Következő
 
