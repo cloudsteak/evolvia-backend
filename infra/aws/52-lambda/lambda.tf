@@ -12,7 +12,7 @@ resource "aws_lambda_function" "this" {
   role          = aws_iam_role.this[each.key].arn
   package_type  = "Image"
   image_uri     = "${local.ecr[each.key].url}:${each.value.image_tag}"
-  architectures = ["x86_64"]
+  architectures = [each.value.architecture]
   memory_size   = 512
   timeout       = each.value.timeout
   publish       = true
@@ -72,6 +72,10 @@ resource "aws_lambda_function" "this" {
     precondition {
       condition     = each.value.image_tag != "" && lower(each.value.image_tag) != "latest"
       error_message = "functions[\"${each.key}\"].image_tag must be a pinned tag. latest is not allowed."
+    }
+    precondition {
+      condition     = contains(["arm64", "x86_64"], each.value.architecture)
+      error_message = "functions[\"${each.key}\"].architecture must be arm64 or x86_64."
     }
   }
 }

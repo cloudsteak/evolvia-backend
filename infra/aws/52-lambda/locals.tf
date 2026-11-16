@@ -24,7 +24,8 @@ locals {
   functions = {
     backend = {
       name           = "${local.prefix}-backend"
-      image_tag      = "1.0.14"
+      image_tag      = "1.1.0"
+      architecture   = "arm64"
       timeout        = 60
       log_level      = "INFO"
       ses            = true
@@ -37,7 +38,8 @@ locals {
     }
     cleanup = {
       name           = "${local.prefix}-cleanup"
-      image_tag      = "1.0.4"
+      image_tag      = "1.1.0"
+      architecture   = "arm64"
       timeout        = 60
       log_level      = "INFO"
       ses            = false
@@ -50,7 +52,8 @@ locals {
     }
     authorizer = {
       name           = "${local.prefix}-authorizer"
-      image_tag      = "1.0.3"
+      image_tag      = "1.1.0"
+      architecture   = "arm64"
       timeout        = 10
       log_level      = "INFO"
       ses            = false

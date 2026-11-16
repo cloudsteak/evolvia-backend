@@ -37,7 +37,7 @@ A kód CI-vel megy az ECR-be, majd a Lambdára. Tofu nem buildel Python-t.
 | `22-dns` | network | **minden** Route53 + API GW custom domain + alias + ACM/SES waiter | 20, 21 | apply kész; alias catch-up (önálló, nem olvas 60-at) |
 | `34-dynamodb` | data / nosql | lab tábla | 12 | apply kész |
 | `50-ecr` | compute | ECR map: backend + cleanup + authorizer | 12 | apply kész; authorizer repo catch-up |
-| `52-lambda` | compute | minden Lambda (`functions` map), SnapStart, alias `live`, SSM API kulcsok | 12, 21, 34, 50 | apply kész; authorizer catch-up |
+| `52-lambda` | compute | minden Lambda (`functions` map: image tag és architektúra), SnapStart, alias `live`, SSM API kulcsok | 12, 21, 34, 50 | apply kész; authorizer catch-up |
 | `55-scheduler` | compute | EventBridge Scheduler → cleanup `live`, group `{prefix}`, `rate(30 minutes)` | 12, 52 | apply kész; group catch-up **60 előtt** |
 | `60-backend` | apps | HTTP API + bind + Lambda authorizer (`X-API-Key`), CORS, stage `live`. `/health` nyitva. Nincs Route53, nincs domain resource | 12, 22, 52 | apply kész; authorizer bind catch-up |
 

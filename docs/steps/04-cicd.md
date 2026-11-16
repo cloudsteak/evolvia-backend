@@ -18,7 +18,7 @@ OIDC secret: `AWS_GITHUB_ROLE_ARN`. A 12-es role `main` + `pull_request`. **Elő
 
 A K8s GHCR workflow-k (`docker-build-lab-*.yml`) még mennek `main`-re, amíg a 9. kivezetés.
 
-Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart), `linux/amd64` és `linux/arm64`. Pinelt semver, nem `latest` a Lambdán. A 52 `image_tag` és az `architectures` külön PR.
+Image: `FROM public.ecr.aws/lambda/python:3.13` (SnapStart), `linux/amd64` és `linux/arm64`. Pinelt semver, nem `latest` a Lambdán. A tag a 52 `image_tag`. Az architektúra függvényenként a 52 `functions.*.architecture` (`arm64` vagy `x86_64`).
 
 ## Következő
 
