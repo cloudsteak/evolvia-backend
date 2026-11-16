@@ -32,7 +32,7 @@ export AWS_REGION=eu-north-1
 # backend
 URI=$(aws ecr describe-repositories --repository-names evolvia-backend --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
 aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
-docker buildx build --platform linux/amd64,linux/arm64 \
+docker buildx build --platform linux/arm64 \
   --provenance=false --sbom=false \
   -f backend/Dockerfile.lambda \
   -t "${URI}:1.0.0" \
@@ -43,7 +43,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 # cleanup — 50 apply után, ha a repo már létezik
 URI=$(aws ecr describe-repositories --repository-names evolvia-cleanup --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
 aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
-docker buildx build --platform linux/amd64,linux/arm64 \
+docker buildx build --platform linux/arm64 \
   --provenance=false --sbom=false \
   -f cleanup-trigger/Dockerfile.lambda \
   -t "${URI}:1.0.0" \
@@ -71,7 +71,7 @@ export AWS_REGION=eu-north-1
 
 URI=$(aws ecr describe-repositories --repository-names evolvia-authorizer --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
 aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
-docker buildx build --platform linux/amd64,linux/arm64 \
+docker buildx build --platform linux/arm64 \
   --provenance=false --sbom=false \
   -f authorizer/Dockerfile.lambda \
   -t "${URI}:1.0.0" \
@@ -153,7 +153,7 @@ aws ssm put-parameter --name /prod/evolvia/github/token --type SecureString --ov
 
 URI=$(aws ecr describe-repositories --repository-names evolvia-cleanup --region eu-north-1 --query 'repositories[0].repositoryUri' --output text)
 aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin "${URI}"
-docker buildx build --platform linux/amd64,linux/arm64 \
+docker buildx build --platform linux/arm64 \
   --provenance=false --sbom=false \
   -f cleanup-trigger/Dockerfile.lambda \
   -t "${URI}:1.0.1" \
