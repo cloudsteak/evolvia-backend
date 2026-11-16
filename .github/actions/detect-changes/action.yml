@@ -52,9 +52,11 @@ runs:
         backend=false
         cleanup=false
         authorizer=false
+        image_workflow=false
         echo "$files" | grep -q '^backend/' && backend=true || true
         echo "$files" | grep -q '^cleanup-trigger/' && cleanup=true || true
         echo "$files" | grep -q '^authorizer/' && authorizer=true || true
+        echo "$files" | grep -q '^\.github/workflows/ecr-image.yml$' && image_workflow=true || true
 
         layers=()
         while IFS= read -r dir; do
@@ -74,13 +76,13 @@ runs:
         fi
 
         images_items=()
-        if [ "$backend" = true ]; then
+        if [ "$backend" = true ] || [ "$image_workflow" = true ]; then
           images_items+=('{"context":"backend","file":"backend/Dockerfile.lambda","repository":"evolvia-backend","version_file":"backend/pyproject.toml","function_key":"backend"}')
         fi
-        if [ "$cleanup" = true ]; then
+        if [ "$cleanup" = true ] || [ "$image_workflow" = true ]; then
           images_items+=('{"context":"cleanup-trigger","file":"cleanup-trigger/Dockerfile.lambda","repository":"evolvia-cleanup","version_file":"cleanup-trigger/pyproject.toml","function_key":"cleanup"}')
         fi
-        if [ "$authorizer" = true ]; then
+        if [ "$authorizer" = true ] || [ "$image_workflow" = true ]; then
           images_items+=('{"context":"authorizer","file":"authorizer/Dockerfile.lambda","repository":"evolvia-authorizer","version_file":"authorizer/pyproject.toml","function_key":"authorizer"}')
         fi
         if [ ${#images_items[@]} -eq 0 ]; then
