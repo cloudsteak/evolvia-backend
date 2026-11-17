@@ -118,19 +118,21 @@ Apply kész. Stage `live`. Alias: `https://backend.api.evolvia.hu/`. A kulcsok: 
 
 ## Cleanup (3e)
 
-Repo, portal, verify URL, WP webhook **nem** locals: Parameter Store (`put-parameter`). Workflow suffix (`-lab-manager.yaml`) locals. Tofu csak a pathot ismeri (env + IAM).
+Repo, portal, AWS és GCP verify, WP webhook **nem** locals: Parameter Store (`put-parameter`). Workflow suffix (`-lab-manager.yaml`) locals. A 52 tofu csak a pathot ismeri (env + IAM).
 
-A GCP verify host a régi cluster DNS — Lambdából nem elérhető, amíg nincs publikus URL.
+Az Azure verify URL és kulcs az [evolvia-foundation `azure/50-verify`](https://github.com/cloudsteak/evolvia-foundation/tree/main/azure/50-verify) outputja. URL: `verify_api_url` (`{gateway}/v1/verify`). Kulcs: Key Vault `verify-api-key` (első érték `REPLACE_ME`, utána a value ignore). Custom domain (`enable_custom_domain`, alapból ki): `https://verify-azure.api.cloud-mentor.hu/v1/verify`. Ezek kerülnek a `/prod/evolvia/verify/azure/url` és `.../key` paraméterbe.
+
+A GCP verify host a régi cluster DNS. Lambdából nem elérhető, amíg nincs publikus URL.
 
 ```bash
 aws ssm put-parameter --name /prod/evolvia/github/repo --type String --overwrite --value 'cloudsteak/evolvia-forge'
 aws ssm put-parameter --name /prod/evolvia/portal/azure --type String --overwrite --value 'https://portal.azure.com'
 aws ssm put-parameter --name /prod/evolvia/portal/aws --type String --overwrite --value 'https://evolvia.signin.aws.amazon.com/console'
-aws ssm put-parameter --name /prod/evolvia/verify/azure/url --type String --overwrite --value 'https://evolvia-verify-apim.azure-api.net/v1/verify'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/url --type String --overwrite --value '<verify_api_url>'
 aws ssm put-parameter --name /prod/evolvia/verify/aws/url --type String --overwrite --value 'https://verify-aws.api.cloud-mentor.hu/v1/verify'
 aws ssm put-parameter --name /prod/evolvia/verify/gcp/url --type String --overwrite --value 'http://evolvia-verify-lab-gcp.evolvia-backend-prod.svc.cluster.local:8000/v1/verify'
 aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-url --type String --overwrite --value 'https://evolvia.hu/wp-json/lab-launcher/v1/lab-status-webhook'
-aws ssm put-parameter --name /prod/evolvia/verify/azure/key --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/key --type SecureString --overwrite --value '<verify-api-key>'
 aws ssm put-parameter --name /prod/evolvia/verify/aws/key --type SecureString --overwrite --value '…'
 aws ssm put-parameter --name /prod/evolvia/verify/gcp/key --type SecureString --overwrite --value '…'
 aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-token --type SecureString --overwrite --value '…'

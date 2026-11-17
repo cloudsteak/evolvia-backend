@@ -29,7 +29,8 @@ A 52 env-je pathot ad, az értéket a Parameter Store tartja. Tofu a paramétert
 | `SES_FROM_ADDRESS` | `noreply@evolvia.hu` |
 | `SSM_PORTAL_AZURE_URL`, `SSM_PORTAL_AWS_URL` | konzol link a levélben |
 | `SSM_GITHUB_REPO`, `SSM_GITHUB_TOKEN`, `GITHUB_WORKFLOW_FILENAME` | workflow dispatch. A suffix `-lab-manager.yaml` |
-| `SSM_VERIFY_{AZURE,AWS,GCP}_{URL,KEY}` | verify hívás, header `X-API-Key` |
+| `SSM_VERIFY_AZURE_{URL,KEY}` | Azure verify. Forrás: evolvia-foundation `azure/50-verify` (`verify_api_url`, Key Vault `verify-api-key`) |
+| `SSM_VERIFY_{AWS,GCP}_{URL,KEY}` | AWS és GCP verify hívás, header `X-API-Key` |
 | `SSM_WORDPRESS_WEBHOOK_URL`, `SSM_WORDPRESS_WEBHOOK_TOKEN` | lab státusz webhook |
 
 A feladó `Cloud Mentor <noreply@evolvia.hu>`. Azure labnál a felhasználónév `{username}@evolvia.hu`. Sablon: `templates/lab_ready_default.html`.
