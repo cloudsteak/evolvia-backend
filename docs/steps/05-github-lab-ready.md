@@ -1,6 +1,6 @@
 # 5. GitHub lab-ready kliens
 
-A forge `lab-ready-callback` Auth0 helyett `X-API-Key`. A reusable WF `@main`-t hív — merge kell, különben a régi callback fut.
+A forge `lab-ready-callback` `X-API-Key` headerrel hívja a backendet. A reusable WF `@main`-t hív.
 
 GitHub (evolvia-forge):
 
@@ -9,7 +9,7 @@ GitHub (evolvia-forge):
 | Variable `BACKEND_HOST` | `backend.api.evolvia.hu` (nincs `https://`) |
 | Secret `BACKEND_API_KEY` | SSM `/prod/evolvia/api-keys/github` |
 
-Auth0 secret/var a callbackhoz nem kell.
+A kulcs felvétele: [02-infra-tofu](./02-infra-tofu.md#api-kulcsok). A forge kód nincs ebben a repóban.
 
 ## Következő
 

@@ -33,4 +33,4 @@ Az apply **visszatér a promptra**, amint a cert request létrejött. Státusz: 
 
 ## Következő layer
 
-`infra/aws/22-dns`
+`infra/aws/21-ses`

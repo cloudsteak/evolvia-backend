@@ -14,7 +14,7 @@ PR: csak a változott mappa. Merge (`main`): image push, aztán a változott tof
 
 Két PR továbbra is oké (előbb image, aztán 52 `image_tag`). Egy PR is: merge-ön előbb push, aztán 52 apply.
 
-OIDC secret: `AWS_GITHUB_ROLE_ARN`. A 12-es role `main` + `pull_request`. **Először laptop:** `cd infra/aws/12-oidc && tofu apply` — enélkül a PR plan `AssumeRole` fail.
+OIDC secret: `AWS_GITHUB_ROLE_ARN`. A 12-es role `main` + `pull_request`, apply kész. Laptopról ugyanez: `cd infra/aws/12-oidc && tofu apply`. Role nélkül a PR plan `AssumeRole` hibával áll meg.
 
 A K8s GHCR workflow-k (`docker-build-lab-*.yml`) még mennek `main`-re, amíg a 9. kivezetés.
 

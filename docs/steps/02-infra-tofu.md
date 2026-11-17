@@ -9,19 +9,18 @@ A sávok és a sorrend: **[docs/layers.md](../layers.md)**. Kisebbtől nagyobbig
 | 12-oidc | apply kész |
 | 20-certificates | apply kész |
 | 21-ses | apply kész |
-| 22-dns | apply kész; **alias catch-up** (custom domain + A/AAAA) |
+| 22-dns | apply kész (`backend.api.evolvia.hu`, custom domain + A/AAAA) |
 | 34-dynamodb | apply kész (`evolvia-platform-labs`) |
-| 50-ecr | apply kész (`evolvia-backend`, `evolvia-cleanup`) |
-| első ECR push | laptop kész (`1.0.0` + `latest`, mindkét repo) |
-| 52-lambda | apply kész |
+| 50-ecr | apply kész (`evolvia-backend`, `evolvia-cleanup`, `evolvia-authorizer`) |
+| 52-lambda | apply kész (`functions.*.image_tag`, most `1.1.0`) |
 | 55-scheduler | apply kész |
-| 60-backend | apply kész; bind a 22 alias catch-up után |
+| 60-backend | apply kész, bind a 22 domainre |
 
-A 22 alias catch-up: ha a domain még a 60-é, 60 destroy (vagy a domain resource), aztán `cd infra/aws/22-dns && tofu apply` — a 22 létrehozza, nem importál, 60-at nem olvassa. Aztán 60 apply (bind).
+Ha a domain még a 60 state-jében van: 60 destroy (vagy a domain resource), aztán `cd infra/aws/22-dns && tofu apply` — a 22 létrehozza, nem importál, 60-at nem olvassa. Aztán 60 apply (bind).
 
 ## Első ECR push
 
-Nulláról: 50 apply után, 52 apply **előtt**. Két repo, két push. Repo gyökér.
+Nulláról: 50 apply után, 52 apply **előtt**. Backend és cleanup itt, az authorizer a következő szakaszban. Repo gyökér. A futó tag a 52 `image_tag` (most `1.1.0`); az alábbi parancs az első, `1.0.0`-s push.
 
 `"${URI}:latest"` — kapcsos zárójel. `--provenance=false --sbom=false` — a Lambda nem fogad Image Indexet.
 
@@ -52,11 +51,11 @@ docker buildx build --platform linux/arm64 \
   cleanup-trigger
 ```
 
-A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`, `authorizer`). Main után: [04-cicd](../../../docs/steps/04-cicd.md) (`main.yml`).
+A 52 `functions` kulcsa = 50 `repositories` kulcsa (`backend`, `cleanup`, `authorizer`). Main után: [04-cicd](./04-cicd.md) (`main.yml`).
 
-## Authorizer catch-up (3c előre)
+## API-kulcsok
 
-50 apply **előbb** (repo). Image push a **repo gyökérből**. 52 apply **után**.
+Az authorizer repo a 50-ben van, a függvény a 52-ben, a bind a 60-ban. Apply kész. Újraépítés: image a repo gyökérből, aztán 52 apply. A futó tag a 52 `image_tag` (most `1.1.0`); az alábbi parancs az első, `1.0.0`-s push.
 
 `"${URI}:latest"` — kapcsos zárójel. `--provenance=false --sbom=false` — a Lambda nem fogad Image Indexet.
 
@@ -93,7 +92,7 @@ A három API-kulcsot te írod (`put-parameter`). A tofu csak a pathot ismeri (en
 openssl rand -hex 32
 ```
 
-256 bit, header-barát. A `github` kulcs új (eddig Auth0); nem a `ghp_` PAT.
+256 bit, header-barát. A `github` kulcs API-kulcs, nem a `ghp_` PAT.
 
 ```bash
 export AWS_PROFILE=prod
@@ -113,33 +112,27 @@ tofu apply
 
 `GET /health` nyitva. A többi route: header `X-API-Key`.
 
-## 52 apply
+## 52, 55, 60
 
-Már lefutott. Authorizer: fenti catch-up.
-
-## 55 apply
-
-Már lefutott.
-
-## 60 apply
-
-Stage `live`. Alias: `https://backend.api.evolvia.hu/`. Authorizer: fenti catch-up.
+Apply kész. Stage `live`. Alias: `https://backend.api.evolvia.hu/`. A kulcsok: [API-kulcsok](#api-kulcsok).
 
 ## Cleanup (3e)
 
-Repo, portal, verify URL, WP webhook **nem** locals: Parameter Store (`put-parameter`). Workflow suffix (`-lab-manager.yaml`) locals. Tofu csak a pathot ismeri (env + IAM).
+Repo, portal, AWS és GCP verify, WP webhook **nem** locals: Parameter Store (`put-parameter`). Workflow suffix (`-lab-manager.yaml`) locals. A 52 tofu csak a pathot ismeri (env + IAM).
 
-A GCP verify host a régi cluster DNS — Lambdából nem elérhető, amíg nincs publikus URL.
+Az Azure verify URL és kulcs az [evolvia-foundation `azure/50-verify`](https://github.com/cloudsteak/evolvia-foundation/tree/main/azure/50-verify) outputja. URL: `verify_api_url` (`{gateway}/v1/verify`). Kulcs: Key Vault `verify-api-key` (első érték `REPLACE_ME`, utána a value ignore). Custom domain (`enable_custom_domain`, alapból ki): `https://verify-azure.api.cloud-mentor.hu/v1/verify`. Ezek kerülnek a `/prod/evolvia/verify/azure/url` és `.../key` paraméterbe.
+
+A GCP verify host a régi cluster DNS. Lambdából nem elérhető, amíg nincs publikus URL.
 
 ```bash
 aws ssm put-parameter --name /prod/evolvia/github/repo --type String --overwrite --value 'cloudsteak/evolvia-forge'
 aws ssm put-parameter --name /prod/evolvia/portal/azure --type String --overwrite --value 'https://portal.azure.com'
 aws ssm put-parameter --name /prod/evolvia/portal/aws --type String --overwrite --value 'https://evolvia.signin.aws.amazon.com/console'
-aws ssm put-parameter --name /prod/evolvia/verify/azure/url --type String --overwrite --value 'https://evolvia-verify-apim.azure-api.net/v1/verify'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/url --type String --overwrite --value '<verify_api_url>'
 aws ssm put-parameter --name /prod/evolvia/verify/aws/url --type String --overwrite --value 'https://verify-aws.api.cloud-mentor.hu/v1/verify'
 aws ssm put-parameter --name /prod/evolvia/verify/gcp/url --type String --overwrite --value 'http://evolvia-verify-lab-gcp.evolvia-backend-prod.svc.cluster.local:8000/v1/verify'
 aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-url --type String --overwrite --value 'https://evolvia.hu/wp-json/lab-launcher/v1/lab-status-webhook'
-aws ssm put-parameter --name /prod/evolvia/verify/azure/key --type SecureString --overwrite --value '…'
+aws ssm put-parameter --name /prod/evolvia/verify/azure/key --type SecureString --overwrite --value '<verify-api-key>'
 aws ssm put-parameter --name /prod/evolvia/verify/aws/key --type SecureString --overwrite --value '…'
 aws ssm put-parameter --name /prod/evolvia/verify/gcp/key --type SecureString --overwrite --value '…'
 aws ssm put-parameter --name /prod/evolvia/wordpress/webhook-token --type SecureString --overwrite --value '…'

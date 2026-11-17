@@ -1,27 +1,40 @@
 # EVOLVIA-BACKEND
 
-FastAPI alapú backend automatikus Azure lab környezetek létrehozásához, email értesítéssel, Auth0 hitelesítéssel, Redis-alapú TTL kezelés.
+Lab környezetek (Azure, AWS, GCP) indítása. A lab állapot DynamoDB-ben van, a kész labról SES küld emailt. A HTTP API Lambda mögött fut. A védett route-ok `X-API-Key` headert várnak. `GET /health` nyitva.
 
-Lambda / AWS átállás (lépésenként): [docs/atallas.md](docs/atallas.md). Infra: [infra/](infra/README.md).
+Átállás: [docs/atallas.md](docs/atallas.md). Layer terv: [docs/layers.md](docs/layers.md).
 
-## Futás Dockerrel:
+## Kód
 
-```bash
-docker build -t student-lab-backend .
-docker run -p 8000:8000 --env-file .env student-lab-backend
-```
+- [backend/](backend/README.md) — API (lab indítás, státusz, verify, email)
+- [cleanup-trigger/](cleanup-trigger/README.md) — lejárt labok törlése
+- [authorizer/](authorizer/README.md) — `X-API-Key` ellenőrzés SSM-ből
 
-## API végpontok:
-- `POST /start-lab`: lab indítása (Auth0 token szükséges)
-- `GET /lab-status/{username}`: lab állapot lekérdezése
+A kiadott image mindháromnál a `Dockerfile.lambda`. A `backend/Dockerfile` és a `cleanup-trigger/Dockerfile` a korábbi konténer.
 
-## Szükséges környezeti változók:
-Lásd `.env.example` fájlt.
+## Infra
 
+OpenTofu, apply sorrend: [infra/README.md](infra/README.md).
 
-## Docker képfájl fordítása helyben:
-```bash
-docker buildx build --platform linux/amd64 -t ghcr.io/cloudsteak/lab-backend:latest .
-```
+- [infra/00-remote-state/](infra/00-remote-state/README.md)
+- [infra/aws/12-oidc/](infra/aws/12-oidc/README.md)
+- [infra/aws/20-certificates/](infra/aws/20-certificates/README.md)
+- [infra/aws/21-ses/](infra/aws/21-ses/README.md)
+- [infra/aws/22-dns/](infra/aws/22-dns/README.md)
+- [infra/aws/34-dynamodb/](infra/aws/34-dynamodb/README.md)
+- [infra/aws/50-ecr/](infra/aws/50-ecr/README.md)
+- [infra/aws/52-lambda/](infra/aws/52-lambda/README.md)
+- [infra/aws/55-scheduler/](infra/aws/55-scheduler/README.md)
+- [infra/aws/60-backend/](infra/aws/60-backend/README.md)
 
+## API
 
+Host: `https://backend.api.evolvia.hu`. A `/health` kivételével minden route `X-API-Key`.
+
+- `GET /` , `GET /health`
+- `POST /start-lab`
+- `POST /lab-ready`
+- `POST /verify-lab`
+- `GET /lab-status/all`
+- `POST /clean-up-lab`
+- `POST /lab-delete-internal`

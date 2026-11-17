@@ -4,7 +4,7 @@ EventBridge Scheduler → 52 `cleanup:live`. `rate(30 minutes)`. Group: `{prefix
 
 `local.schedules` map — most egy kulcs: `cleanup`.
 
-A group a schedule identity része: a `default` → `evolvia` váltás **cseréli** a schedule-t. Apply **60 előtt**.
+A group a schedule identity része. A `default` → `evolvia` váltás lecserélte a schedule-t. Apply kész, a 60 előtt.
 
 ## State
 
